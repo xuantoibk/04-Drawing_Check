@@ -11,11 +11,15 @@ import re
 
 from drawing_check.core.model import DrawingDoc, PageDoc
 
-_MAU_SHEET = re.compile(r"^\s*(\d+)\s*/\s*(\d+)\s*$")
+_MAU_SHEET = re.compile(r"^\s*(\d+)\s*[/-]\s*(\d+)\s*$")
 
 
 def tach_sheet(sheet_text: str | None) -> tuple[int | None, int | None]:
-    """Tach chuoi sheet dang "1/3" thanh (to_hien_tai, tong_so_to). Tra ve (None, None) neu khong khop."""
+    """Tach chuoi sheet dang "1/3" hoac "1-3" thanh (to_hien_tai, tong_so_to). Tra ve (None,
+    None) neu khong khop. Du lieu that (00_input/MH612-DATA GIA CONG FULL.pdf) dung dau gach
+    ngang (vd "1-1") - phat hien khi viet rule TB-008 (2026-08-23), truoc do regex chi nhan '/'
+    nen sheets_expected luon la None tren toan bo du lieu that, chua ai de y vi chua gay loi ro
+    (file mau chi co ban ve 1 to)."""
     if not sheet_text:
         return None, None
     m = _MAU_SHEET.match(sheet_text)

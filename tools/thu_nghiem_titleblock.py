@@ -19,6 +19,7 @@ THU_MUC_GOC = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(THU_MUC_GOC / "src"))
 
 import pypdfium2 as pdfium  # noqa: E402
+import yaml  # noqa: E402
 
 from drawing_check.core.grouping import gom_trang_thanh_ban_ve  # noqa: E402
 from drawing_check.core.model import PageDoc  # noqa: E402
@@ -35,6 +36,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("pdf", help="Duong dan file PDF")
     ap.add_argument("--so-trang", type=int, default=2, help="So trang dau xu ly (mac dinh 2)")
+    ap.add_argument(
+        "--du-an", default="mh612",
+        help="Ten file profile du an trong config/projects/ (mac dinh mh612, khong can duoi .yaml)",
+    )
     args = ap.parse_args()
 
     duong_dan = Path(args.pdf)
@@ -43,9 +48,13 @@ def main() -> int:
     n_pages = len(doc)
     so_trang = min(args.so_trang, n_pages)
 
+    du_an_path = THU_MUC_GOC / "config" / "projects" / f"{args.du_an}.yaml"
+    vat_lieu_path = THU_MUC_GOC / "config" / "catalogs" / "materials.yaml"
+    project = yaml.safe_load(du_an_path.read_text(encoding="utf-8")) or {}
+    danh_muc_vat_lieu = yaml.safe_load(vat_lieu_path.read_text(encoding="utf-8")) or {}
     context = {
-        "project": {},  # chua co profile du an that (drawing_no_pattern/projection_angle) - TB-002/PROJ-002 se khong chay
-        "catalogs": {"materials": []},  # danh muc that con rong - TB-011 se khong bao sai
+        "project": project,
+        "catalogs": {"materials": danh_muc_vat_lieu.get("materials", [])},
     }
 
     rules = doc_thu_muc_rule(THU_MUC_GOC / "rules")

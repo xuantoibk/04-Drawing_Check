@@ -47,3 +47,29 @@ và viết/kiểm chứng extractor khung tên thật trên toàn bộ 1 file PD
 2. Xác nhận danh mục vật liệu chính thức (đã thấy A6061/SPHC/SS400/POM trên bản vẽ thật) để bật
    thật rule TB-011
 3. Chốt drawing_no_pattern + chuẩn ISO/JIS chính thức cho dự án MH612/Alpha Vina với người dùng
+
+## Nhật ký triển khai — Hoàn tất Phase 1 (CLI + Excel/PDF/golden test), bắt đầu Phase 2 (rule đồng bộ nhiều tờ) (2026-08-23)
+
+Tiếp nối phiên trước (dựng khung sườn + extractor khung tên thật). Phiên này chốt các quyết định nghiệp vụ còn treo của Phase 1, biến CLI từ stub thành công cụ chạy thật đầu ra Excel/PDF, dựng golden test đầu tiên, mở rộng rule khung tên theo checklist người dùng, rồi bắt đầu Phase 2.
+
+### Đã hoàn thành
+- Chốt `standard_profile: iso`, `projection_angle: first`, `drawing_no_pattern` cho dự án MH612/Alpha Vina (`config/projects/mh612.yaml`), xác nhận trên bằng chứng trực tiếp từ 51/51 trang thật
+- Điền danh mục vật liệu chính thức 9 mã (`config/catalogs/materials.yaml`), mở khoá rule TB-011
+- Viết CLI `drawing-check run` thật: nối extractor + rule engine + config vào 1 pipeline dùng chung (`pipeline.py`), thay thế bản stub cũ
+- Viết report Excel (2 sheet, tô màu theo mức độ) và PDF khoanh đỏ (annotation pypdf, dùng bbox có sẵn), xuất ra `output/<yyyymmdd-hhmmss>-...`
+- Dựng golden test đầu tiên (`tests/golden/mh612/`), dùng chính file PDF 51 trang đã coi tạm là tiêu chuẩn — PDF không commit git (bí mật kinh doanh), chỉ `expected.yaml` được track, test tự skip trên máy không có file
+- Thêm 5 rule khung tên mới theo checklist người dùng: TB-003/004 (tỷ lệ), TB-005 (dung sai chung), TB-006/008 (số tờ) — nâng tổng số rule khung tên từ 6 lên 11
+- Phát hiện + sửa lỗi định dạng số tờ (giả định `/` sai, thực tế `-`) — đồng thời phát hiện lỗi TƯƠNG TỰ đã có sẵn từ phiên trước trong `grouping.py::tach_sheet` (âm thầm không đọc được số tờ trên dữ liệu thật từ đầu, chưa ai để ý)
+- Bắt đầu Phase 2: thêm 2 rule đồng bộ nhiều tờ MS-001 (thiếu tờ)/MS-002 (revision không khớp giữa các tờ) — cơ chế rule cấp BẢN VẼ mới (`chay_rule_tren_ban_ve`), khác cơ chế cấp TRANG cũ; test bằng dữ liệu giả vì chưa có bản vẽ nhiều tờ thật
+
+### Quyết định quan trọng đã chốt
+- **11 rule khung tên là đủ cho Phase 1, bỏ mục tiêu 25-30 rule của kế hoạch gốc** — Vì sao: người dùng chủ động xác nhận. Đánh đổi: giảm độ phủ rule so với kế hoạch gốc
+- **Golden set tạm dùng đúng 1 file/51 trang hiện có, coi là tiêu chuẩn tạm thời** — Vì sao: chưa có thêm bản vẽ thật đa dạng hơn. Đánh đổi: precision/recall đo được chưa đủ tin cậy như kế hoạch gốc yêu cầu (30-50 bản, nhiều mẫu/nguồn CAD)
+- **Phase 1 coi là hoàn tất dù golden set còn mỏng, chuyển sang Phase 2** — Vì sao: người dùng chủ động chấp nhận đánh đổi. Đánh đổi: độ tin cậy precision/recall thấp hơn kế hoạch gốc đề ra
+- **Định dạng số tờ chấp nhận cả `x/y` và `x-y`** — Vì sao: dữ liệu thật dùng `-`, người dùng xác nhận chấp nhận cả 2 để phòng dự án/khách hàng khác dùng `/`
+- **Tỷ lệ (scale) hợp lệ: `x:1`/`1:x` theo dãy số ISO, cộng ngoại lệ `2:3`/`3:2`/`2:5`/`5:2`** — Vì sao: dữ liệu thật có 3 trang tỷ lệ không theo dạng `1:x`, người dùng xác nhận đây là tỷ lệ hợp lệ bổ sung, không phải lỗi. Đánh đổi: danh sách ngoại lệ có thể chưa đủ nếu gặp tỷ lệ lạ hơn
+
+### Bước tiếp theo (ưu tiên phiên sau)
+1. Chế độ "dò lỏng" theo từ khóa cho khung tên không khớp mẫu Alpha Vina đã biết (kết quả tự động ở mức WARN)
+2. Thêm 3-5 mẫu khung tên khách hàng khác — cần người dùng cung cấp bản vẽ mẫu thật (PDF)
+3. Mở rộng golden set — cần bản vẽ nhiều tờ thật để kiểm chứng MS-001/MS-002 (hiện chỉ test bằng dữ liệu giả), và bản vẽ đa dạng hơn (khác mẫu/nguồn CAD) để precision/recall đáng tin cậy hơn

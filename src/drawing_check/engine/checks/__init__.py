@@ -1,6 +1,13 @@
-"""Cac ham check tuy bien (check: custom trong rule YAML).
+"""Cac custom check khong dien ta duoc bang primitive co san (field_present/field_matches/
+field_in_catalog/field_equals_project) - dang ky trong HANDLERS, tra cuu theo params.handler
+cua rule check: custom trong file YAML."""
 
-Chua co module nao o day - Phase 1 chi dung 4 primitive co san trong engine/primitives.py.
-Them module con (vd revision.py, fits.py, threads.py...) dung luc trien khai rule Phase 2/3
-tuong ung can toi, khong tao truoc khi chua co rule nao dung den.
-"""
+from __future__ import annotations
+
+from typing import Any
+
+from drawing_check.engine.checks.sheet import sheet_khong_hop_le
+
+HANDLERS: dict[str, Any] = {
+    "sheet_khong_hop_le": sheet_khong_hop_le,
+}

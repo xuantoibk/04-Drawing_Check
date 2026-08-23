@@ -25,7 +25,10 @@ def rules():
 
 def test_doc_duoc_du_rule_khung_ten(rules):
     ma_rule = {r.id for r in rules}
-    assert {"TB-001", "TB-002", "TB-007", "TB-011", "PROJ-001", "PROJ-002"} <= ma_rule
+    assert {
+        "TB-001", "TB-002", "TB-003", "TB-004", "TB-005", "TB-006", "TB-007", "TB-008",
+        "TB-011", "PROJ-001", "PROJ-002",
+    } <= ma_rule
 
 
 def test_thieu_ma_ban_ve_bao_TB001_muc_fail(rules):
@@ -44,9 +47,26 @@ def test_ban_ve_day_du_dung_khong_bao_loi_khung_ten(rules):
         checked_by="NVA",
         projection="third",
         sheet="1/1",
+        scale="1:2",
+        general_tol="(ISO 2768-1)",
     )
     findings = chay_rule_tren_trang(trang, rules, CONTEXT_MAU)
     assert findings == []
+
+
+def test_so_to_khong_hop_le_bao_TB008(rules):
+    trang = page_mau(
+        drawing_no="KB-00123-A01",
+        material="SS400",
+        checked_by="NVA",
+        projection="third",
+        sheet="3/2",  # to hien tai lon hon tong so to - vo ly
+        scale="1:2",
+        general_tol="(ISO 2768-1)",
+    )
+    findings = chay_rule_tren_trang(trang, rules, CONTEXT_MAU)
+    ma_loi = {f.rule_id for f in findings}
+    assert "TB-008" in ma_loi
 
 
 def test_goc_chieu_sai_chuan_du_an_bao_PROJ002(rules):
@@ -56,6 +76,8 @@ def test_goc_chieu_sai_chuan_du_an_bao_PROJ002(rules):
         checked_by="NVA",
         projection="first",  # du an dung "third"
         sheet="1/1",
+        scale="1:2",
+        general_tol="(ISO 2768-1)",
     )
     findings = chay_rule_tren_trang(trang, rules, CONTEXT_MAU)
     ma_loi = {f.rule_id for f in findings}

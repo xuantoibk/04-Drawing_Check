@@ -15,6 +15,13 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
   `extract`, `engine`, `report`, `vision`, `config` — khớp cấu trúc `src/drawing_check/`.
 - **Quản lý dependency: pip + venv (`.venv/`)**, không dùng poetry/uv — chọn vì đơn giản nhất cho
   1 người dùng/1 máy ở giai đoạn hiện tại. Cài bằng `pip install -e ".[dev]"` từ `pyproject.toml`.
+- **Rule engine có 2 cấp chạy riêng, không trộn lẫn:** `engine/runner.py::chay_rule_tren_trang`
+  (rule trên 1 TRƯỜNG của 1 TRANG, dùng `PRIMITIVES` trong `primitives.py`) và
+  `chay_rule_tren_ban_ve` (rule trên QUAN HỆ giữa nhiều trang cùng 1 `drawing_no`, dùng
+  `PRIMITIVES_BAN_VE` trong `primitives_drawing.py`, chỉ gọi được SAU khi đã gom trang thành bản
+  vẽ). Cả 2 loại rule cùng nằm trong `rules/*.yaml`, phân biệt bằng tên `check` — mỗi runner tự
+  bỏ qua rule không thuộc phạm vi mình, không raise lỗi. Thêm rule cấp bản vẽ mới thì viết hàm
+  trong `primitives_drawing.py`, đăng ký vào `PRIMITIVES_BAN_VE`.
 
 ## Kỹ thuật trích xuất PDF (áp dụng cho mọi mẫu khung tên, không riêng Alpha Vina)
 
@@ -42,8 +49,28 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
 - Đã kiểm chứng extractor + rule engine trên 51/51 trang PDF thật (1 file, mẫu khung tên công ty
   "Alpha Vina Machinery and Automation JSC", dự án MH612) — 0 finding báo sai. Chi tiết đầy đủ ở
   `docs/Source/Project-History.md`.
-- **Danh mục vật liệu, `drawing_no_pattern`, và profile chuẩn ISO/JIS cho dự án MH612/Alpha Vina
-  CHƯA được người dùng xác nhận chính thức** — đã QUAN SÁT thấy vật liệu A6061/SPHC/SS400/POM và
-  dạng mã "MH612-M####-VẬTLIỆU-XỬLÝ-P/L" trên bản vẽ thật, nhưng KHÔNG được tự ý đưa vào
-  `config/catalogs/materials.yaml` hay `config/projects/*.yaml` như dữ liệu chính thức nếu chưa hỏi
-  lại người dùng — quan sát từ 1 file chưa chắc đại diện cho toàn bộ vật liệu/mẫu mã công ty dùng.
+- **`config/projects/mh612.yaml` và `config/catalogs/materials.yaml` ĐÃ được người dùng xác nhận
+  chính thức (2026-08-23)** — không còn là quan sát tạm: `standard_profile: iso` (bằng chứng trực
+  tiếp "(ISO 2768-1)" trên 51/51 trang), `projection_angle: first` (người dùng xác nhận trực tiếp,
+  KHÔNG đọc được từ PDF), `drawing_no_pattern` dạng `MH612-M####-<mã vật liệu>-[<mã xử lý bề
+  mặt>]-<P|L|H|T>` (đoạn xử lý bề mặt tuỳ chọn), 9 mã vật liệu chính thức (A6061/SPHC/POM/SS400/
+  A5052/SUS201/SUS303/SUS304/S45C). Chỉ dựa trên 1 file/1 khách hàng — cần đối chiếu lại khi có
+  dự án/khách hàng khác, KHÔNG suy diễn áp dụng thẳng cho khách hàng khác.
+- **11 rule khung tên hiện có (TB-001/002/003/004/005/006/007/008/011, PROJ-001/002, MS-001/002)
+  là ĐỦ cho Phase 1+2 theo xác nhận của người dùng (2026-08-23)** — KHÔNG cần đạt 25-30 rule như
+  mục tiêu ban đầu trong tài liệu kế hoạch. Khi đánh giá "Phase 1 đã xong chưa", không dùng tiêu
+  chí số lượng rule làm chuẩn nữa.
+- **Golden set (`tests/golden/mh612/`) vẫn chỉ có 1 file/51 trang/1 mẫu khung tên/1 nguồn CAD** —
+  người dùng đồng ý coi tạm là tiêu chuẩn (2026-08-23), Phase 1 được coi là hoàn tất dù golden set
+  còn mỏng. Con số "0 FAIL sai"/precision đo được CHỈ đáng tin trên đúng file này — không suy rộng
+  ra "công cụ đã đạt precision 98%" cho dữ liệu khác khi chưa kiểm chứng thêm. File PDF nguồn
+  KHÔNG commit git (bí mật kinh doanh, xem `.gitignore`), chỉ `expected.yaml` được track — golden
+  test (`tests/golden/test_mh612.py`) tự động skip trên máy không có bản sao file.
+- **Định dạng trường `sheet` (số tờ) chấp nhận cả `x/y` và `x-y`** — dữ liệu thật dùng dấu gạch
+  ngang (`1-1`), không phải gạch chéo như giả định ban đầu. Áp dụng nhất quán ở cả
+  `core/grouping.py::tach_sheet` và `engine/checks/sheet.py`.
+- **Định dạng trường `scale` (tỷ lệ) hợp lệ:** `1:x` hoặc `x:1` với x thuộc dãy số ưu tiên ISO
+  (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100),
+  CỘNG THÊM 4 ngoại lệ đã xác nhận với người dùng: `2:3`, `3:2`, `2:5`, `5:2`. Danh sách ngoại lệ
+  có thể chưa đầy đủ nếu gặp tỷ lệ khác lạ hơn trên bản vẽ mới — hỏi lại người dùng thay vì tự
+  thêm ngoại lệ.

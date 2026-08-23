@@ -1,0 +1,34 @@
+# Profile du an MH612 - khach hang Alpha Vina Machinery and Automation JSC.
+# Chot ngay 2026-08-23 sau khi doi chieu voi nguoi dung tren du lieu that (51/51 trang
+# 00_input/MH612-DATA GIA CONG FULL.pdf). Dinh dang theo DATA_DOC/DrawingCheck_KeHoachXayDung.md
+# muc 4.3 va config/projects/_vi_du.yaml.
+project_id: MH612
+customer: "Alpha Vina Machinery and Automation JSC"
+
+# ISO: ca 51/51 trang khung ten ghi thang "(ISO 2768-1)" - bang chung truc tiep, khong suy doan.
+standard_profile: iso
+
+# Goc chieu thu nhat (First-angle) - nguoi dung xac nhan truc tiep, KHONG doc duoc tu PDF (ky
+# hieu la hinh ve/cone-circle, khong phai text) nen khong the tu dong xac minh bang extractor.
+projection_angle: first
+
+# Nhan khung ten quan sat duoc tren ca 51 trang deu la tieng Anh (DESIGNED/CHECKED/APPROVED/
+# SCALE/MATERIAL/SHEET...), ten nguoi ky la tieng Viet - suy tu du lieu, CHUA hoi xac nhan rieng
+# vi khong co rule nao dung truong nay hien tai.
+language: [en]
+
+# Extractor hien tai (extract/titleblock.py) dung crop-region hardcode theo huong trang (A3
+# ngang / A4 dung), CHUA doc theo file template - de trong, dien khi engine chuyen sang doc
+# template thay vi hardcode.
+title_block_template: null
+
+# MH612-M####-<ma_vat_lieu>-[<ma_xu_ly_be_mat>]-<hau_to_gia_cong>
+# Doan ma xu ly be mat la TUY CHON - vat lieu PO (POM, nhua) khong co doan nay trong du lieu that.
+# Danh sach ma vat lieu/xu ly/hau to nguoi dung xac nhan truc tiep 2026-08-23 (xem
+# docs/Source/config-Remember.md muc drawing_no_pattern MH612 de biet y nghia tung ma):
+#   vat lieu : A6=A6061, A5=A5052, SPHC=thep can nong, SS=SPHC/SS400, PO=POM,
+#              S2=SUS201, S3=SUS303, S4=SUS304, SC=S45C
+#   xu ly be mat (tuy chon): AW=Anodized White, AB=Anodized Black, CE=Son tinh dien,
+#              NI=Ma Nickel, Cr=Ma Crom, Zn=Ma Kem
+#   hau to gia cong: P=Part(CNC), L=Laser/cat tam, H=Han, T=Tien
+drawing_no_pattern: '^MH612-M\d{4}-(A6|A5|SPHC|SS|PO|S2|S3|S4|SC)(-(AW|AB|CE|NI|Cr|Zn))?-(P|L|H|T)$'

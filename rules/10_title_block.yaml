@@ -33,6 +33,51 @@ rules:
     params: { field: title_block.checked_by }
     message_vi: "Chua co nguoi kiem tra. Ban ve khong duoc phat hanh khi chua qua kiem."
 
+  - id: TB-003
+    name: "Thieu ty le"
+    severity: major
+    check: field_present
+    params: { field: title_block.scale }
+    message_vi: "Khung ten thieu ty le ban ve (scale)."
+    fix_hint: "Dien ty le dang x:y, vd 1:2 hoac 2:1."
+
+  - id: TB-004
+    name: "Ty le sai dinh dang"
+    severity: major
+    check: field_matches
+    params:
+      field: title_block.scale
+      # x:y trong do 1 ben = 1, ben con lai thuoc day so uu tien ISO; rieng 2:3/3:2/2:5/5:2
+      # duoc cong ty chap nhan them (xac nhan voi nguoi dung 2026-08-23).
+      pattern: '^(1:(1|1\.5|2|2\.5|3|4|5|6|8|10|12|15|20|25|30|35|40|45|50|60|70|80|90|100)|(1|1\.5|2|2\.5|3|4|5|6|8|10|12|15|20|25|30|35|40|45|50|60|70|80|90|100):1|2:3|3:2|2:5|5:2)$'
+    message_vi: "Ty le '{value}' khong hop le - phai dang x:y voi 1 ben = 1 (hoac 2:3/3:2/2:5/5:2)."
+
+  - id: TB-005
+    name: "Thieu dung sai chung"
+    severity: major
+    check: field_present
+    params: { field: title_block.general_tol }
+    message_vi: "Khung ten thieu dung sai chung (general tolerance)."
+    fix_hint: "Dien dung sai chung theo chuan da khai bao cho du an, vd (ISO 2768-1)."
+
+  - id: TB-006
+    name: "Thieu so to"
+    severity: major
+    check: field_present
+    params: { field: title_block.sheet }
+    message_vi: "Khung ten thieu so to (sheet)."
+    fix_hint: "Dien dang x/y, vd 1/1 neu ban ve chi co 1 to."
+
+  - id: TB-008
+    name: "So to sai dinh dang hoac khong hop le"
+    severity: major
+    check: custom
+    params:
+      field: title_block.sheet
+      handler: sheet_khong_hop_le
+    message_vi: "So to '{value}' khong hop le - phai dang x/y voi 1<=x<=y."
+    fix_hint: "Kiem tra lai so to hien tai (x) va tong so to (y) cua ban ve, dam bao 1<=x<=y."
+
   - id: TB-011
     name: "Vat lieu khong co trong danh muc"
     severity: critical

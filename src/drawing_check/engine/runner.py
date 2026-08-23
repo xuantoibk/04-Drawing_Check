@@ -9,9 +9,11 @@ from __future__ import annotations
 from typing import Any
 
 from drawing_check.core.finding import Finding, Level
-from drawing_check.core.model import Field, PageDoc
+from drawing_check.core.model import DrawingDoc, Field, PageDoc
+from drawing_check.engine.checks import HANDLERS
 from drawing_check.engine.loader import Rule
 from drawing_check.engine.primitives import PRIMITIVES
+from drawing_check.engine.primitives_drawing import PRIMITIVES_BAN_VE
 
 NGUON_KHONG_CHAC_CHAN = {"ocr", "vlm"}
 
@@ -52,13 +54,21 @@ def chay_rule_tren_trang(page: PageDoc, rules: list[Rule], context: dict | None 
             # Rule tam hoan - chua co nguon du lieu tuong ung (vd requires: dxf, nhanh CAD dang hoan).
             continue
         if rule.check == "custom":
-            raise NotImplementedError(
-                f"Rule {rule.id}: check 'custom' (handler={rule.params.get('handler')}) chua co "
-                "module xu ly trong engine/checks/ - chua toi Phase can rule nay."
-            )
-        ham = PRIMITIVES.get(rule.check)
-        if ham is None:
-            raise ValueError(f"Rule {rule.id}: check '{rule.check}' chua duoc ho tro")
+            ten_handler = rule.params.get("handler")
+            ham = HANDLERS.get(ten_handler)
+            if ham is None:
+                raise NotImplementedError(
+                    f"Rule {rule.id}: check 'custom' voi handler='{ten_handler}' chua dang ky "
+                    "trong engine/checks/HANDLERS."
+                )
+        elif rule.check in PRIMITIVES_BAN_VE:
+            # Rule cap BAN VE (nhieu trang, vd dong bo revision) - khong chay o day, danh cho
+            # chay_rule_tren_ban_ve xu ly sau khi gom trang thanh ban ve.
+            continue
+        else:
+            ham = PRIMITIVES.get(rule.check)
+            if ham is None:
+                raise ValueError(f"Rule {rule.id}: check '{rule.check}' chua duoc ho tro")
 
         duong_dan_field = rule.params.get("field")
         if not duong_dan_field:
@@ -79,6 +89,50 @@ def chay_rule_tren_trang(page: PageDoc, rules: list[Rule], context: dict | None 
                 field=duong_dan_field,
                 fix_hint=rule.fix_hint,
                 bbox=field.prov.bbox,
+            )
+        )
+    return ket_qua
+
+
+def chay_rule_tren_ban_ve(
+    drawing: DrawingDoc, rules: list[Rule], context: dict | None = None
+) -> list[Finding]:
+    """Chay cac rule cap BAN VE (kiem tra quan he GIUA nhieu trang cung drawing_no, vd du to
+    chua/revision co khop nhau khong) - khac voi chay_rule_tren_trang (chay tren 1 truong cua
+    dung 1 trang). Chi goi SAU KHI da gom trang thanh ban ve (core/grouping.py). Rule khong
+    thuoc PRIMITIVES_BAN_VE (vd rule khung ten thuong) bi bo qua, danh cho chay_rule_tren_trang."""
+    context = context or {}
+    ket_qua: list[Finding] = []
+
+    for rule in rules:
+        if rule.requires or rule.check not in PRIMITIVES_BAN_VE:
+            continue
+        ham = PRIMITIVES_BAN_VE[rule.check]
+        vi_pham, cac_nguon, bien_bo_sung = ham(drawing, rule.params, context)
+        if not vi_pham:
+            continue
+
+        muc: Level = "WARN" if any(n in NGUON_KHONG_CHAC_CHAN for n in cac_nguon) else "FAIL"
+        bien = dict(rule.params)
+        bien.update(bien_bo_sung)
+        bien["drawing_no"] = drawing.drawing_no
+        bien["sheets_found"] = drawing.sheets_found
+        bien["sheets_expected"] = drawing.sheets_expected
+        try:
+            noi_dung = rule.message_vi.format(**bien)
+        except (KeyError, IndexError):
+            noi_dung = rule.message_vi
+
+        ket_qua.append(
+            Finding(
+                rule_id=rule.id,
+                level=muc,
+                severity=rule.severity,
+                message_vi=noi_dung,
+                drawing_no=drawing.drawing_no,
+                page_no=drawing.pages[-1].page_no,
+                field=rule.params.get("field"),
+                fix_hint=rule.fix_hint,
             )
         )
     return ket_qua

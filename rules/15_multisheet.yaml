@@ -1,0 +1,34 @@
+# Rule nhom dong bo nhieu to (Phase 2, theo dung DATA_DOC/DrawingCheck_KeHoachXayDung.md muc
+# "Phase 2 - Mo rong do phu khung ten"). Khac voi 10_title_block.yaml: rule o day kiem tra quan
+# he GIUA nhieu trang cung 1 drawing_no (chay boi engine/runner.py::chay_rule_tren_ban_ve, SAU
+# khi da gom trang thanh ban ve - core/grouping.py), khong phai 1 truong cua 1 trang don le.
+#
+# LUU Y: 51 trang du lieu that hien co (00_input/MH612-DATA GIA CONG FULL.pdf) deu la ban ve 1
+# to (sheets_expected=1) - 2 rule nay CHUA duoc kiem chung tren ban ve nhieu to that nao, chi
+# kiem chung bang du lieu gia (tests/unit/). Can doi chieu lai khi co ban ve nhieu to that.
+version: 1
+ruleset: multisheet
+applies_to:
+  standard: [iso, jis]
+
+rules:
+  - id: MS-001
+    name: "Thieu to"
+    severity: critical
+    check: sheets_du_so_luong
+    params: {}
+    message_vi: >
+      Ban ve '{drawing_no}' chi thu thap duoc {sheets_found}/{sheets_expected} to - co the con
+      thieu to chua nop/chua quet.
+    fix_hint: "Kiem tra da dua vao du tat ca cac to cua ban ve nay chua."
+
+  - id: MS-002
+    name: "Revision khong khop giua cac to"
+    severity: critical
+    check: field_khop_giua_cac_to
+    params:
+      field: title_block.revision
+    message_vi: >
+      Cac to cua ban ve '{drawing_no}' dang ghi revision khac nhau: {cac_gia_tri} - co to chua
+      duoc cap nhat theo ban sua doi moi nhat.
+    fix_hint: "Dam bao tat ca cac to cung 1 ban ve duoc cap nhat cung 1 revision truoc khi phat hanh."

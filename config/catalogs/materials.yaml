@@ -1,5 +1,19 @@
-# Danh muc vat lieu cong ty - CHUA CO DU LIEU THAT.
-# Dien danh sach ky hieu vat lieu dang dung (vd SS400, S45C, SUS304, A5052...) truoc khi bat
-# rule TB-011 (field_in_catalog) that su hoat dong - xem DATA_DOC/DrawingCheck_KeHoachXayDung.md
-# muc 10 Phase 0 "Liet ke danh muc vat lieu/ren/xu ly be mat dang dung".
-materials: []
+# Danh muc vat lieu cong ty - du an MH612/Alpha Vina, chot voi nguoi dung ngay 2026-08-23.
+# 4 gia tri dau (A6061/SPHC/POM/SS400) da xac minh truc tiep tu truong MATERIAL tren 51/51 trang
+# 00_input/MH612-DATA GIA CONG FULL.pdf. 5 gia tri sau (A5052/SUS201/SUS303/SUS304/S45C) nguoi
+# dung xac nhan la ky hieu chuan tuong ung voi ma ngan A5/S2/S3/S4/SC trong drawing_no_pattern
+# (xem config/projects/mh612.yaml), CHUA xuat hien trong file mau nay - can doi chieu lai khi
+# co ban ve that dau tien dung mac vat lieu do.
+# LUU Y: trang 21 cua file mau doc duoc "A66061" (thua 1 so so voi "A6061") - da xac minh KHONG
+# phai loi trich xuat, nhieu kha nang la loi danh may that tren ban ve goc - CO Y KHONG dua vao
+# danh muc de rule TB-011 bat loi nay dung nhu thiet ke.
+materials:
+  - A6061
+  - SPHC
+  - POM
+  - SS400
+  - A5052
+  - SUS201
+  - SUS303
+  - SUS304
+  - S45C

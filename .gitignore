@@ -10,3 +10,16 @@ dist/
 # DATA_DOC/DrawingCheck_KeHoachXayDung.md muc 2 "Tu van bao mat").
 00_input/
 
+# Ban sao PDF that dung cho golden test (tests/golden/) - cung ly do bao mat nhu 00_input/ o
+# tren. Chi file PDF bi chan, file expected.yaml (ket qua da xac nhan, khong phai hinh anh ban
+# ve) van duoc commit binh thuong.
+tests/golden/**/*.pdf
+
+# Ket qua xuat ra tu lenh 'drawing-check run' (Excel + PDF khoanh do) - chua noi dung ban ve
+# that cua khach hang, cung ly do bao mat nhu 00_input/.
+output/
+
+# Ban backup tam thoi cua docs/Source/*.md truoc khi /Works_End ghi de - chi de an toan cuc bo,
+# khong can luu vinh vien trong git (noi dung that da nam trong lich su git tu commit truoc).
+DATA_DOC/Source_bak/
+

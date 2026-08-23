@@ -1,0 +1,20 @@
+# Ket qua da xac nhan thu cong tren 00_input/MH612-DATA GIA CONG FULL.pdf (51 trang), coi TAM
+# THOI la tieu chuan doi chieu (golden) cho du an MH612/Alpha Vina - chot voi nguoi dung
+# 2026-08-23. CHUA phai golden set day du theo dung khuyen nghi ke hoach goc (30-50 ban, nhieu
+# mau khung ten/nguon CAD khac nhau) - chi 1 file/1 mau khung ten/1 nguon CAD. Bo sung them file
+# khac (thu muc rieng ngang cap mh612/) khi co du lieu moi, KHONG ghi de file nay.
+file: "MH612-DATA GIA CONG FULL.pdf"
+so_trang: 51
+
+# Tong so finding theo muc do, cong don tren ca 51 trang.
+tong_ket:
+  FAIL: 1
+  WARN: 51
+  INFO: 0
+
+# Danh sach loi CU THE da biet truoc, phai luon con bi bat dung - neu extractor/rule engine
+# doi ma lam mat 1 trong cac loi nay (vd catalog vat lieu vo tinh them "A66061"), test se bao do.
+loi_biet_truoc:
+  - trang: 21
+    rule_id: TB-011
+    drawing_no: MH612-M2004-A6-AW-P

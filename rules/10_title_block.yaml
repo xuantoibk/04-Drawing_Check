@@ -1,0 +1,66 @@
+# Rule nhom A - khung ten & metadata (Phase 1, dung theo dinh dang muc 7.1 tai lieu ke hoach).
+# Chi gom cac rule dung duoc primitive co san (field_present/field_matches/field_in_catalog/
+# field_equals_project). Rule TB-014 (custom, doi chieu bang sua doi) CHUA dua vao day - can
+# them field revision_history vao TitleBlock va viet checks/revision.py truoc (Phase 2).
+version: 1
+ruleset: title_block
+applies_to:
+  standard: [iso, jis]
+
+rules:
+  - id: TB-001
+    name: "Thieu ma ban ve"
+    severity: critical
+    confidence_gate: 0.95
+    check: field_present
+    params: { field: title_block.drawing_no }
+    message_vi: "Khung ten thieu ma ban ve."
+    fix_hint: "Dien ma ban ve theo quy tac dat ten cua du an."
+
+  - id: TB-002
+    name: "Ma ban ve sai dinh dang"
+    severity: major
+    check: field_matches
+    params:
+      field: title_block.drawing_no
+      pattern_from_project: drawing_no_pattern
+    message_vi: "Ma '{value}' khong khop quy tac dat ten da khai bao cho du an nay."
+
+  - id: TB-007
+    name: "Thieu nguoi kiem tra"
+    severity: major
+    check: field_present
+    params: { field: title_block.checked_by }
+    message_vi: "Chua co nguoi kiem tra. Ban ve khong duoc phat hanh khi chua qua kiem."
+
+  - id: TB-011
+    name: "Vat lieu khong co trong danh muc"
+    severity: critical
+    check: field_in_catalog
+    params:
+      field: title_block.material
+      catalog: materials
+    message_vi: "Vat lieu '{value}' khong co trong danh muc vat lieu cong ty."
+    fix_hint: "Dung ky hieu chuan, vd SS400, S45C, SUS304, A5052."
+
+  - id: PROJ-001
+    name: "Thieu ky hieu goc chieu"
+    severity: critical
+    confidence_gate: 0.5
+    check: field_present
+    params: { field: title_block.projection }
+    message_vi: "Ban ve khong ghi ky hieu goc chieu - nguy co gia cong lat guong."
+    fix_hint: >
+      Ky hieu goc chieu la HINH VE (cone/circle), khong phai text - duong PDF text khong doc
+      duoc field nay (confidence luon thap, rule chi len muc WARN). Can nguoi kiem tra xac nhan
+      bang mat, hoac cho toi Phase 4 (nhan dang hinh anh) moi tu dong hoa duoc.
+
+  - id: PROJ-002
+    name: "Goc chieu sai chuan du an"
+    severity: critical
+    confidence_gate: 0.5
+    check: field_equals_project
+    params:
+      field: title_block.projection
+      project_key: projection_angle
+    message_vi: "Ban ve ghi goc chieu '{value}' nhung du an nay dung chuan khac."

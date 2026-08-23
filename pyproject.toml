@@ -1,0 +1,31 @@
+[project]
+name = "drawing-check"
+version = "0.1.0"
+description = "Cong cu kiem tra ban ve ky thuat (PDF) tu dong - khung ten, kich thuoc, dung sai, GD&T"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dependencies = [
+    "pypdfium2",
+    "pypdf",
+    "pdfplumber",
+    "pyyaml",
+    "pydantic>=2",
+    "typer",
+    "xlsxwriter",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+drawing-check = "drawing_check.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Drawing Check — Tiến độ triển khai</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #1f2320; --muted: #6b6f6a;
+    --done: #2f7a4f; --done-bg: #e7f3ec;
+    --block: #b3541e; --block-bg: #fbeee2;
+    --todo: #6b6f6a; --todo-bg: #eeeeec;
+    --accent: #b3541e; --line: #e3e1db;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", -apple-system, sans-serif; padding: 32px 16px 80px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 28px; font-size: .92rem; }
+  .overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .num { font-size: 1.5rem; font-weight: 700; }
+  .stat .lbl { color: var(--muted); font-size: .82rem; }
+  .phase { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    margin-bottom: 18px; overflow: hidden; }
+  .phase-head { padding: 14px 18px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .phase-head h2 { font-size: 1.05rem; margin: 0; }
+  .phase-head .pct { font-size: .85rem; color: var(--muted); }
+  .bar { height: 6px; background: var(--todo-bg); }
+  .bar-fill { height: 100%; background: var(--accent); }
+  ul.tasks { list-style: none; margin: 0; padding: 10px 18px 16px; }
+  ul.tasks li { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line);
+    font-size: .93rem; align-items: flex-start; }
+  ul.tasks li:last-child { border-bottom: none; }
+  .tag { flex: 0 0 auto; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .02em; margin-top: 1px; }
+  .tag.done { color: var(--done); background: var(--done-bg); }
+  .tag.block { color: var(--block); background: var(--block-bg); }
+  .tag.todo { color: var(--todo); background: var(--todo-bg); }
+  .txt b { display: block; }
+  .txt span.note { color: var(--muted); font-size: .87rem; }
+  footer { max-width: 880px; margin: 24px auto 0; color: var(--muted); font-size: .82rem; }
+  @media (max-width: 600px) { .overview { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Drawing Check — Tiến độ triển khai</h1>
+  <p class="sub">Theo đúng lộ trình đã chốt ở <code>DATA_DOC/DrawingCheck_KeHoachXayDung.md</code>. Cập nhật lần cuối: 2026/08/22 (đã trích khung tên thật cho toàn bộ 51 trang của file mẫu).</p>
+
+  <div class="overview">
+    <div class="stat"><div class="num">51/51</div><div class="lbl">Trang trích đúng drawing_no/material/scale/người ký</div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">Finding báo sai (FAIL) trên 51 trang thử</div></div>
+    <div class="stat"><div class="num">≥98%</div><div class="lbl">Mục tiêu precision (mức FAIL)</div></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>Phase 0 — Dò dữ liệu thật</h2><span class="pct">5/8 xong</span></div>
+    <div class="bar"><div class="bar-fill" style="width:62%"></div></div>
+    <ul class="tasks">
+      <li><span class="tag done">Xong</span><div class="txt"><b>Dựng khung sườn repo</b><span class="note">pyproject.toml, venv .venv/, cấu trúc thư mục src/config/rules/tests theo §11</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>Chuyển probe_pdf.py / bench_pdf_libs.py vào tools/</b><span class="note">trước đó nằm ở DATA_DOC/, đã xác nhận chạy được từ vị trí mới</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>Dò toàn bộ 51 trang PDF thật (00_input/MH612-DATA GIA CONG FULL.pdf)</b><span class="note">100% VECTOR_TEXT_OK, không dính bẫy SHX; 27 trang A3 + 24 trang A4</span></div></li>
+      <li><span class="tag block">Chờ dữ liệu</span><div class="txt"><b>Chạy tools/probe_pdf.py trên các file/thư mục PDF thật KHÁC</b><span class="note">mới có 1 file — cần thêm file khác để biết mẫu khung tên này có đại diện chung không</span></div></li>
+      <li><span class="tag block">Chờ dữ liệu</span><div class="txt"><b>Thu thập 150–200 bản vẽ thật</b><span class="note">đủ cả 2 nguồn AutoCAD và SolidWorks/Inventor/Creo</span></div></li>
+      <li><span class="tag block">Chờ dữ liệu</span><div class="txt"><b>Dựng golden set 30–50 bản + *.expected.json</b><span class="note">cần bạn hoặc kỹ sư trưởng review thủ công từng bản</span></div></li>
+      <li><span class="tag block">Chờ dữ liệu</span><div class="txt"><b>Đo tọa độ khung tên các mẫu khác</b><span class="note">đã có 1 mẫu chạy được (Alpha Vina A3) — cần thêm mẫu nếu công ty dùng nhiều template</span></div></li>
+      <li><span class="tag block">Chờ dữ liệu</span><div class="txt"><b>Liệt kê danh mục vật liệu/ren/xử lý bề mặt thật</b><span class="note">→ config/catalogs/*.yaml — hiện đang là file rỗng (đã thấy "A6061" thật trên bản vẽ mẫu)</span></div></li>
+      <li><span class="tag block">Chờ dữ liệu</span><div class="txt"><b>Viết checklist review thủ công hiện tại ra giấy</b><span class="note">nguồn để soạn rules/*.yaml sát thực tế</span></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>Phase 1 — MVP khung tên từ PDF vector</h2><span class="pct">6/8 xong</span></div>
+    <div class="bar"><div class="bar-fill" style="width:75%"></div></div>
+    <ul class="tasks">
+      <li><span class="tag done">Xong</span><div class="txt"><b>Model dữ liệu lõi</b><span class="note">core/model.py (PageDoc, DrawingDoc, TitleBlock, Field, Provenance), core/finding.py</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>Logic gom trang → bản vẽ</b><span class="note">core/grouping.py, theo drawing_no + sheet, có test — đã chạy thật trên 51 trang → đúng 51 bản vẽ riêng biệt</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>Khung rule engine + 6 rule khung tên mẫu</b><span class="note">engine/loader.py, runner.py, primitives.py + rules/10_title_block.yaml (TB-001, TB-002, TB-007, TB-011, PROJ-001, PROJ-002)</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>CLI skeleton + bộ test</b><span class="note">typer (version/run), 12 test pytest dùng dữ liệu giả — đang pass</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>Extractor PDF thật cho 1 mẫu khung tên (cả A3 + A4)</b><span class="note">extract/pdf_page.py + titleblock.py — kiểm chứng trên TOÀN BỘ 51 trang thật: drawing_no/material/scale/sheet/người ký đúng 51/51, title đúng 49/51 (2 trang thật sự để trống)</span></div></li>
+      <li><span class="tag done">Xong</span><div class="txt"><b>Chạy rule engine trên 51 trang thật, đo false positive</b><span class="note">0 FAIL sai, 51 WARN đúng (thiếu ký hiệu góc chiếu — không đọc được từ text, đúng như thiết kế)</span></div></li>
+      <li><span class="tag block">Chờ xác nhận</span><div class="txt"><b>Bật rule TB-011 thật</b><span class="note">cần danh mục vật liệu thật điền vào config/catalogs/materials.yaml — đã thấy A6061/SPHC/SS400/POM trên bản vẽ thật</span></div></li>
+      <li><span class="tag block">Chờ xác nhận</span><div class="txt"><b>Chốt mẫu drawing_no_pattern + chuẩn ISO/JIS cho dự án MH612</b><span class="note">quan sát được dạng "MH612-M####-VẬTLIỆU-XỬLÝ-P/L" nhưng chưa chốt regex chính thức với người dùng</span></div></li>
+      <li><span class="tag block">Chờ Phase 0</span><div class="txt"><b>Xuất Excel + khoanh đỏ PDF</b><span class="note">report/excel.py, report/pdf_markup.py — cần Finding thật để kiểm chứng định dạng xuất</span></div></li>
+      <li><span class="tag block">Chờ Phase 0</span><div class="txt"><b>Chạy golden set, tinh chỉnh precision ≥98%</b><span class="note">nghiệm thu Phase 1</span></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>Phase 2 — Mở rộng độ phủ khung tên</h2><span class="pct">Chưa bắt đầu</span></div>
+    <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+    <ul class="tasks">
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Thêm 3–5 template khung tên khách hàng</b></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Chế độ "dò lỏng" theo từ khóa (mức WARN)</b></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Rule đồng bộ nhiều tờ + rule góc chiếu PROJ-001/002 chạy trên dữ liệu thật</b></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>Phase 3 — Kích thước, dung sai, GD&T</h2><span class="pct">Chưa bắt đầu</span></div>
+    <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+    <ul class="tasks">
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Bảng ánh xạ glyph GD&T</b><span class="note">config/glyphmaps/*.yaml</span></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Parse dung sai + bảng tra ISO 286/JIS B 0401</b></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Parse GD&T frame, rule kiểm bề mặt lắp thiếu độ nhám</b></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>Phase 4 — Ký hiệu công nghệ + Vision + scan</h2><span class="pct">Chưa bắt đầu (cần GPU)</span></div>
+    <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+    <ul class="tasks">
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Gán nhãn dữ liệu (Label Studio) + train RT-DETR</b></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>OCR PaddleOCR-VL cho vùng đã khoanh + nhánh scan</b></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>VLM fallback (Qwen3-VL)</b></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>Phase 5 — Đối chiếu 3D ↔ 2D</h2><span class="pct">Chỉ lập kế hoạch</span></div>
+    <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+    <ul class="tasks">
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Chưa triển khai — điều kiện tiên quyết là Phase 3 ổn định</b><span class="note">xem §10 tài liệu kế hoạch</span></div></li>
+    </ul>
+  </div>
+</div>
+<footer>File này chỉ lưu cục bộ (không xuất bản lên web) theo đúng quy ước dự án. Cập nhật lại file này (không tạo file mới) mỗi khi tiến độ thay đổi.</footer>
+</body>
+</html>

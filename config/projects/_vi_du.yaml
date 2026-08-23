@@ -1,0 +1,10 @@
+# VI DU minh hoa dinh dang - KHONG PHAI du an that. Copy file nay thanh
+# config/projects/<ma_du_an_that>.yaml va dien thong tin khach hang that khi bat dau Phase 0/1.
+# Dinh dang theo DATA_DOC/DrawingCheck_KeHoachXayDung.md muc 4.3.
+project_id: PRJ-VI-DU-2026
+customer: "Ten khach hang vi du K.K."
+standard_profile: jis # jis | iso | asme
+projection_angle: third # first | third
+language: [ja, en]
+title_block_template: templates/_vi_du_a3.yaml
+drawing_no_pattern: '^KB-\d{5}-[A-Z]\d{2}$'

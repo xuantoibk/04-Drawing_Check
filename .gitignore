@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Ban ve PDF that cua khach hang - bi mat kinh doanh, khong dua vao git (xem
+# DATA_DOC/DrawingCheck_KeHoachXayDung.md muc 2 "Tu van bao mat").
+00_input/
+

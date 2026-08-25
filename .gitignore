@@ -19,7 +19,15 @@ tests/golden/**/*.pdf
 # that cua khach hang, cung ly do bao mat nhu 00_input/.
 output/
 
+# Anh PNG render tu ban ve that de gan nhan Label Studio (Phase 4) + du an Label Studio local -
+# cung ly do bao mat nhu 00_input/.
+01_vision_labeling/
+
 # Ban backup tam thoi cua docs/Source/*.md truoc khi /Works_End ghi de - chi de an toan cuc bo,
 # khong can luu vinh vien trong git (noi dung that da nam trong lich su git tu commit truoc).
 DATA_DOC/Source_bak/
+
+# Checkpoint model da train (RT-DETR, Phase 4) - file nhi phan lon (~1.3GB), tai tao lai duoc
+# bang tools/train_symbol_detector.py + tools/continue_train_v2_rebalanced.py, khong phai source.
+models/
 

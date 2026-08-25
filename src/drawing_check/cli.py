@@ -17,7 +17,7 @@ from drawing_check.core.grouping import gom_trang_thanh_ban_ve
 from drawing_check.core.model import PageDoc
 from drawing_check.engine.loader import doc_thu_muc_rule
 from drawing_check.engine.runner import chay_rule_tren_ban_ve
-from drawing_check.pipeline import chay_1_file
+from drawing_check.pipeline import chay_1_file, tim_du_an_khop
 from drawing_check.report.console import in_bao_cao
 from drawing_check.report.excel import xuat_excel
 from drawing_check.report.pdf_markup import khoanh_do_1_file
@@ -36,28 +36,36 @@ def version() -> None:
 @app.command()
 def run(
     pattern: str,
-    du_an: str = typer.Option(
-        "mh612", "--du-an", help="Ten profile du an trong config/projects/ (khong can duoi .yaml)"
+    vision: bool = typer.Option(
+        False,
+        "--vision/--no-vision",
+        help="Bat detector RT-DETR (Phase 4, symbol WARN) - can GPU/torch/transformers + model "
+        "da train (models/rtdetr_symbols_v1/best/), cham hon nhieu. Mac dinh TAT.",
     ),
 ) -> None:
-    """Chay kiem tra tren cac file PDF khop PATTERN (vd "D:\\BanVe\\*.pdf")."""
+    """Chay kiem tra tren cac file PDF khop PATTERN (vd "D:\\BanVe\\*.pdf").
+
+    Tu dong nap TOAN BO profile trong config/projects/*.yaml (bo qua file bat dau bang "_", vd
+    _vi_du.yaml - chi la mau minh hoa) va tu khop dung profile theo TUNG TRANG qua drawing_no (xem
+    pipeline.py::tim_du_an_khop) - khong con option chon 1 profile cho ca luot chay, vi 1 file PDF
+    co the tron nhieu du an khac nhau (da gap thuc te 2026-08-24: MH612 lan voi M2613/VPK25-01/03).
+    """
     duong_dan_khop = sorted(glob_module.glob(pattern))
     if not duong_dan_khop:
         typer.echo(f"Khong tim thay file PDF nao khop '{pattern}'.")
         raise typer.Exit(code=1)
 
-    du_an_path = THU_MUC_GOC / "config" / "projects" / f"{du_an}.yaml"
-    if not du_an_path.exists():
-        typer.echo(f"Khong tim thay profile du an '{du_an_path}'.")
-        raise typer.Exit(code=1)
-    project = yaml.safe_load(du_an_path.read_text(encoding="utf-8")) or {}
+    danh_sach_du_an = [
+        yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        for p in sorted((THU_MUC_GOC / "config" / "projects").glob("*.yaml"))
+        if not p.name.startswith("_")
+    ]
 
     vat_lieu_path = THU_MUC_GOC / "config" / "catalogs" / "materials.yaml"
     danh_muc_vat_lieu = yaml.safe_load(vat_lieu_path.read_text(encoding="utf-8")) or {}
-    context = {
-        "project": project,
-        "catalogs": {"materials": danh_muc_vat_lieu.get("materials", [])},
-    }
+    iso286_path = THU_MUC_GOC / "config" / "catalogs" / "iso286_letters.yaml"
+    danh_muc_iso286 = yaml.safe_load(iso286_path.read_text(encoding="utf-8")) or {}
+    catalogs = {"materials": danh_muc_vat_lieu.get("materials", []), "iso286": danh_muc_iso286}
 
     rules = doc_thu_muc_rule(THU_MUC_GOC / "rules")
 
@@ -70,14 +78,17 @@ def run(
     findings: list[Finding] = []
     for duong_dan_str in duong_dan_khop:
         duong_dan = Path(duong_dan_str)
-        trang_1_file, findings_1_file = chay_1_file(duong_dan, rules, context)
+        trang_1_file, findings_1_file = chay_1_file(
+            duong_dan, rules, danh_sach_du_an, catalogs, chay_vision=vision
+        )
         trang_list.extend(trang_1_file)
         findings.extend(findings_1_file)
         khoanh_do_1_file(duong_dan, findings_1_file, thu_muc_pdf_khoanh / duong_dan.name)
 
     ban_ve_list = gom_trang_thanh_ban_ve(trang_list)
     for ban_ve in ban_ve_list:
-        findings.extend(chay_rule_tren_ban_ve(ban_ve, rules, context))
+        context_ban_ve = {"project": tim_du_an_khop(ban_ve.drawing_no, danh_sach_du_an) or {}}
+        findings.extend(chay_rule_tren_ban_ve(ban_ve, rules, context_ban_ve))
 
     in_bao_cao(findings, so_trang=len(trang_list), so_ban_ve=len(ban_ve_list))
     xuat_excel(findings, duong_dan_excel)

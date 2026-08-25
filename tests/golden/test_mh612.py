@@ -16,7 +16,7 @@ import yaml
 from drawing_check.core.grouping import gom_trang_thanh_ban_ve
 from drawing_check.engine.loader import doc_thu_muc_rule
 from drawing_check.engine.runner import chay_rule_tren_ban_ve
-from drawing_check.pipeline import chay_1_file
+from drawing_check.pipeline import chay_1_file, tim_du_an_khop
 
 THU_MUC_GOC = Path(__file__).resolve().parents[2]
 THU_MUC_GOLDEN = Path(__file__).resolve().parent / "mh612"
@@ -42,11 +42,16 @@ def ket_qua():
     vat_lieu = yaml.safe_load(
         (THU_MUC_GOC / "config/catalogs/materials.yaml").read_text(encoding="utf-8")
     )
-    context = {"project": project, "catalogs": {"materials": vat_lieu["materials"]}}
+    iso286 = yaml.safe_load(
+        (THU_MUC_GOC / "config/catalogs/iso286_letters.yaml").read_text(encoding="utf-8")
+    )
+    danh_sach_du_an = [project]
+    catalogs = {"materials": vat_lieu["materials"], "iso286": iso286}
     rules = doc_thu_muc_rule(THU_MUC_GOC / "rules")
-    trang_list, findings = chay_1_file(FILE_PDF, rules, context)
+    trang_list, findings = chay_1_file(FILE_PDF, rules, danh_sach_du_an, catalogs)
     for ban_ve in gom_trang_thanh_ban_ve(trang_list):
-        findings.extend(chay_rule_tren_ban_ve(ban_ve, rules, context))
+        context_ban_ve = {"project": tim_du_an_khop(ban_ve.drawing_no, danh_sach_du_an) or {}}
+        findings.extend(chay_rule_tren_ban_ve(ban_ve, rules, context_ban_ve))
     return trang_list, findings
 
 

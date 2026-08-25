@@ -15,13 +15,20 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
   `extract`, `engine`, `report`, `vision`, `config` — khớp cấu trúc `src/drawing_check/`.
 - **Quản lý dependency: pip + venv (`.venv/`)**, không dùng poetry/uv — chọn vì đơn giản nhất cho
   1 người dùng/1 máy ở giai đoạn hiện tại. Cài bằng `pip install -e ".[dev]"` từ `pyproject.toml`.
-- **Rule engine có 2 cấp chạy riêng, không trộn lẫn:** `engine/runner.py::chay_rule_tren_trang`
-  (rule trên 1 TRƯỜNG của 1 TRANG, dùng `PRIMITIVES` trong `primitives.py`) và
-  `chay_rule_tren_ban_ve` (rule trên QUAN HỆ giữa nhiều trang cùng 1 `drawing_no`, dùng
-  `PRIMITIVES_BAN_VE` trong `primitives_drawing.py`, chỉ gọi được SAU khi đã gom trang thành bản
-  vẽ). Cả 2 loại rule cùng nằm trong `rules/*.yaml`, phân biệt bằng tên `check` — mỗi runner tự
-  bỏ qua rule không thuộc phạm vi mình, không raise lỗi. Thêm rule cấp bản vẽ mới thì viết hàm
-  trong `primitives_drawing.py`, đăng ký vào `PRIMITIVES_BAN_VE`.
+- **Rule engine có 3 cấp chạy riêng, không trộn lẫn** (`engine/runner.py`):
+  `chay_rule_tren_trang` (rule trên 1 TRƯỜNG của 1 TRANG, dùng `PRIMITIVES` trong
+  `primitives.py`), `chay_rule_tren_ban_ve` (rule trên QUAN HỆ giữa nhiều trang cùng 1
+  `drawing_no`, dùng `PRIMITIVES_BAN_VE` trong `primitives_drawing.py`, chỉ gọi được SAU khi đã
+  gom trang thành bản vẽ), và `chay_rule_tren_trang_kich_thuoc` (rule trên `page.dimensions` —
+  1 DANH SÁCH trong 1 trang, dùng `PRIMITIVES_KICH_THUOC` trong `primitives_dimension.py`, thêm
+  2026-08-24 cho Phase 3). Cả 3 loại rule cùng nằm trong `rules/*.yaml`, phân biệt bằng tên
+  `check` — mỗi runner tự bỏ qua rule không thuộc phạm vi mình, không raise lỗi. Thêm rule cấp
+  mới thì viết hàm trong đúng module `primitives_*.py`, đăng ký vào đúng `PRIMITIVES_*` dict.
+- **Xác định trang/bản vẽ thuộc DỰ ÁN nào phải khớp theo TIỀN TỐ `project_id-`, KHÔNG khớp theo
+  `drawing_no_pattern` đầy đủ** (`pipeline.py::tim_du_an_khop`, sửa 2026-08-24 sau khi phát hiện
+  bug thật: khớp theo pattern đầy đủ làm "biến mất" đúng những mã ghi sai quy ước — thứ TB-002
+  cần bắt lỗi — vì mã sai không khớp pattern nên bị coi "không thuộc dự án nào" rồi bị bỏ qua
+  thay vì báo FAIL). Xác định dự án và kiểm tra đúng/sai định dạng PHẢI là 2 bước tách biệt.
 
 ## Kỹ thuật trích xuất PDF (áp dụng cho mọi mẫu khung tên, không riêng Alpha Vina)
 
@@ -43,6 +50,26 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
   chi tiết trống lẫn với ngày tháng, hoặc lỗi font PDF gốc ra ký tự rác `#`), trả về `None` thay vì
   đoán giá trị gần đúng. Đã kiểm chứng cách này đúng trên dữ liệu thật (2 trường hợp thật ở trang
   35/41 của file mẫu MH612).
+- **Trang bị `/Rotate != 0` phải đọc qua `pdfplumber`, KHÔNG dùng toạ độ thô của `pypdfium2`**
+  (phát hiện 2026-08-24 trên file M2613/VPK25) — `pypdfium2.get_charbox()` trả toạ độ RAW không
+  khớp với `page.get_size()` trên trang xoay, trong khi `pdfplumber` tự xử lý đúng rotation. Xem
+  `extract/pdf_page.py::lay_dong_tu_trong_vung_pdfplumber` — chỉ mở `pdfplumber.open()` khi CÓ
+  trang xoay trong file (lazy, tránh tốn chi phí ~40x chậm hơn cho file không xoay như MH612).
+- **`gom_dong()` (gom ký tự thành dòng) phải so sánh THEO CHUỖI với ký tự vừa thêm trước đó,
+  KHÔNG so với ký tự đầu tiên của dòng** (sửa 2026-08-24) — so cố định với ký tự đầu gây "trôi"
+  toạ độ cộng dồn qua nhiều ký tự liên tiếp (vd 2 dòng tên công ty gần khung tên), có thể vượt
+  ngưỡng ngay tại ranh giới trường cần đọc, gây mất dữ liệu. Lỗi có sẵn từ Phase 1, chỉ chưa lộ
+  ra vì dữ liệu MH612 không rơi đúng tình huống này.
+- **Chữ số/ký hiệu TOÀN CHIỀU RỘNG kiểu Nhật (Fullwidth Forms, U+FF01-U+FF5E)** — quy ước phổ
+  biến trên bản vẽ theo chuẩn JIS (vd `３０`, `－`, `．`, `Ａ` thay vì `30`, `-`, `.`, `A`). Đã
+  chuẩn hoá về ASCII ngay tại nguồn đọc ký tự (`extract/pdf_page.py`, hàm
+  `extract/text_utils.py::chuan_hoa_fullwidth`) — áp dụng cho MỌI extractor, không chỉ riêng
+  vùng khung tên.
+- **Quét TOÀN TRANG tìm dữ liệu ngoài khung tên (vd kích thước/dung sai) KHÔNG được dùng
+  `lay_dong_tu_trong_vung`/`gom_dong`** — hàm đó được tinh chỉnh cho vùng khung tên HẸP, áp dụng
+  trên cả trang sẽ gộp nhầm nhiều nội dung không liên quan. Phải quét thẳng theo thứ tự ký tự,
+  tự gộp buffer theo khoảng cách vị trí (cả chiều ngang lẫn chiều dọc — một số ký hiệu JIS viết
+  DỌC từng ký tự chồng lên nhau, không phải trái→phải). Xem `extract/dimension.py`.
 
 ## Trạng thái dữ liệu thật đã có
 
@@ -56,16 +83,35 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
   mặt>]-<P|L|H|T>` (đoạn xử lý bề mặt tuỳ chọn), 9 mã vật liệu chính thức (A6061/SPHC/POM/SS400/
   A5052/SUS201/SUS303/SUS304/S45C). Chỉ dựa trên 1 file/1 khách hàng — cần đối chiếu lại khi có
   dự án/khách hàng khác, KHÔNG suy diễn áp dụng thẳng cho khách hàng khác.
-- **11 rule khung tên hiện có (TB-001/002/003/004/005/006/007/008/011, PROJ-001/002, MS-001/002)
-  là ĐỦ cho Phase 1+2 theo xác nhận của người dùng (2026-08-23)** — KHÔNG cần đạt 25-30 rule như
-  mục tiêu ban đầu trong tài liệu kế hoạch. Khi đánh giá "Phase 1 đã xong chưa", không dùng tiêu
-  chí số lượng rule làm chuẩn nữa.
-- **Golden set (`tests/golden/mh612/`) vẫn chỉ có 1 file/51 trang/1 mẫu khung tên/1 nguồn CAD** —
-  người dùng đồng ý coi tạm là tiêu chuẩn (2026-08-23), Phase 1 được coi là hoàn tất dù golden set
-  còn mỏng. Con số "0 FAIL sai"/precision đo được CHỈ đáng tin trên đúng file này — không suy rộng
-  ra "công cụ đã đạt precision 98%" cho dữ liệu khác khi chưa kiểm chứng thêm. File PDF nguồn
-  KHÔNG commit git (bí mật kinh doanh, xem `.gitignore`), chỉ `expected.yaml` được track — golden
-  test (`tests/golden/test_mh612.py`) tự động skip trên máy không có bản sao file.
+- **11 rule khung tên (TB-001/002/003/004/005/006/007/008/011, PROJ-001/002, MS-001/002) là ĐỦ
+  cho Phase 1+2 theo xác nhận của người dùng (2026-08-23)** — KHÔNG cần đạt 25-30 rule như mục
+  tiêu ban đầu trong tài liệu kế hoạch, không dùng số lượng rule làm tiêu chí "xong Phase" nữa.
+  (2026-08-24 có thêm DIM-001 cho Phase 3 — tổng hiện tại 14 rule, nhưng con số 11 vẫn là quyết
+  định lịch sử áp dụng riêng cho phạm vi Phase 1+2 khung tên/đồng bộ nhiều tờ.)
+- **Golden set giờ có 2 bộ tách biệt, tổng 130 trang** (`tests/golden/mh612/` 51 trang sạch +
+  `tests/golden/m2613_vpk25/` 79 trang, thêm 2026-08-24) — cả 2 coi TẠM là tiêu chuẩn theo đồng ý
+  của người dùng. Bộ M2613/VPK25 CỐ Ý có nhiều FAIL thật (69 TB-002 do lỗi đánh mã, 1 TB-011 do
+  vật liệu sai quy ước) — khác bản chất với bộ MH612 (gần sạch), không được coi 2 bộ là cùng loại
+  khi diễn giải kết quả. Cả 2 file PDF nguồn đều KHÔNG commit git (bí mật kinh doanh), chỉ
+  `expected.yaml` được track — 2 golden test tự động skip trên máy không có bản sao file.
+- **`config/projects/m2613.yaml` và `vpk25.yaml` đã được người dùng xác nhận (2026-08-24)** —
+  cùng công ty Alpha Vina, cùng `standard_profile: iso`/`projection_angle: first` như MH612.
+  Pattern `VPK25-M####-...` (KHÔNG có số nhánh `-01/-02/...` — các số nhánh đang thấy trên bản vẽ
+  là lỗi đánh mã thật, cố ý để TB-002 bắt). Danh mục vật liệu dùng CHUNG 1 file với MH612
+  (`config/catalogs/materials.yaml`), không tách riêng theo dự án.
+- **`config/catalogs/iso286_letters.yaml` (bảng chữ cái lệch chuẩn + cấp chính xác ISO 286/JIS B
+  0401) đã được người dùng xác nhận (2026-08-24)** — dùng cho rule DIM-001 (Phase 3, kiểm tra cú
+  pháp mã lắp ghép vd "H7"/"g6"). Rule nay CHỈ kiểm tra CÚ PHÁP (chữ cái + cấp có hợp lệ không),
+  KHÔNG tính giá trị dung sai số theo đường kính. Cố ý loại `X`/`x` và `R`/`r` khỏi phạm vi dò
+  tìm tự động (không phải khỏi danh mục) vì trùng ký hiệu số lượng lặp/bán kính trên dữ liệu
+  thật, dù cả 2 vẫn là chữ cái hợp lệ theo chuẩn. DIM-001 tạm khoá mức WARN (`confidence_gate:
+  0.9`, Dimension trích ra có `confidence: 0.8`) — mới kiểm chứng 22 ví dụ thật, chưa đủ như 51
+  trang khung tên MH612 trước khi cho phép lên FAIL.
+- **Trích dung sai +/- riêng lẻ (khác `general_tol` khung tên) ĐÃ THỬ và BỊ RÚT LẠI (2026-08-24)**
+  — logic chỉ đúng khi chữ viết dọc, sai nghiêm trọng (lệch hàng trăm lần) khi chữ viết ngang.
+  KHÔNG tự làm lại theo cùng hướng tiếp cận cũ — cần phát hiện hướng chữ trước, hoặc đợi Phase 4
+  (nhận diện hình ảnh). Cùng lý do, khung GD&T đầy đủ và rule chéo độ nhám↔dung sai lắp ghép được
+  xác nhận KHÔNG khả thi bằng text-only trên dữ liệu hiện có (không có tín hiệu text phù hợp).
 - **Định dạng trường `sheet` (số tờ) chấp nhận cả `x/y` và `x-y`** — dữ liệu thật dùng dấu gạch
   ngang (`1-1`), không phải gạch chéo như giả định ban đầu. Áp dụng nhất quán ở cả
   `core/grouping.py::tach_sheet` và `engine/checks/sheet.py`.

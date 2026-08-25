@@ -1,0 +1,60 @@
+# Bang chu cai lech chuan + cap chinh xac (IT grade) hop le theo ISO 286-1 / JIS B 0401 - day la
+# SO LIEU CHUAN QUOC TE (khong phai quyet dinh rieng cua cong ty), nguoi dung da xac nhan
+# 2026-08-24. Chu hoa dung cho LO (hole), chu thuong dung cho TRUC (shaft) - vd "H7" (lo) va "g6"
+# (truc) - primitive kiem tra khong phan biet hoa/thuong (uppercase truoc khi so sanh).
+#
+# CHI danh muc nay dung de kiem tra CU PHAP (chu cai + cap co hop le hay khong) - KHONG dung de
+# tinh gia tri dung sai so (micromet) thuc te, vi gia tri do con phu thuoc dai duong kinh, can
+# bang tra rieng phuc tap hon nhieu (xem canh bao rui ro trong docs/Source/Project-Remember.md
+# muc Phase 3).
+chu_cai_lech_chuan:
+  - A
+  - B
+  - C
+  - CD
+  - D
+  - E
+  - EF
+  - F
+  - FG
+  - G
+  - H
+  - JS
+  - J
+  - K
+  - M
+  - N
+  - P
+  - R
+  - S
+  - T
+  - U
+  - V
+  - X
+  - Y
+  - Z
+  - ZA
+  - ZB
+  - ZC
+
+cap_chinh_xac:
+  - "01"
+  - "0"
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+  - "5"
+  - "6"
+  - "7"
+  - "8"
+  - "9"
+  - "10"
+  - "11"
+  - "12"
+  - "13"
+  - "14"
+  - "15"
+  - "16"
+  - "17"
+  - "18"

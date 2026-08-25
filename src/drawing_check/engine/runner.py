@@ -13,9 +13,16 @@ from drawing_check.core.model import DrawingDoc, Field, PageDoc
 from drawing_check.engine.checks import HANDLERS
 from drawing_check.engine.loader import Rule
 from drawing_check.engine.primitives import PRIMITIVES
+from drawing_check.engine.primitives_dimension import PRIMITIVES_KICH_THUOC
 from drawing_check.engine.primitives_drawing import PRIMITIVES_BAN_VE
+from drawing_check.engine.primitives_symbols import PRIMITIVES_KY_HIEU
 
-NGUON_KHONG_CHAC_CHAN = {"ocr", "vlm"}
+NGUON_KHONG_CHAC_CHAN = {"ocr", "vlm", "vision", "pdf_text_loose"}
+
+# Tang "list nhieu vi pham/trang" - dung chung 1 runner (chay_rule_tren_trang_kich_thuoc) cho ca
+# rule kich thuoc (Phase 3) va rule doi chieu ky hieu (Phase 4), vi ca 2 nhan 'page' day du va
+# tra ve cung 1 dinh dang vi pham.
+PRIMITIVES_THEO_TRANG_LIST: dict = {**PRIMITIVES_KICH_THUOC, **PRIMITIVES_KY_HIEU}
 
 
 def lay_field(page: PageDoc, duong_dan: str) -> Field:
@@ -61,9 +68,9 @@ def chay_rule_tren_trang(page: PageDoc, rules: list[Rule], context: dict | None 
                     f"Rule {rule.id}: check 'custom' voi handler='{ten_handler}' chua dang ky "
                     "trong engine/checks/HANDLERS."
                 )
-        elif rule.check in PRIMITIVES_BAN_VE:
-            # Rule cap BAN VE (nhieu trang, vd dong bo revision) - khong chay o day, danh cho
-            # chay_rule_tren_ban_ve xu ly sau khi gom trang thanh ban ve.
+        elif rule.check in PRIMITIVES_BAN_VE or rule.check in PRIMITIVES_THEO_TRANG_LIST:
+            # Rule cap BAN VE (nhieu trang) hoac cap DANH SACH (page.dimensions/surface_finishes)
+            # - khong chay o day, danh cho chay_rule_tren_ban_ve / chay_rule_tren_trang_kich_thuoc.
             continue
         else:
             ham = PRIMITIVES.get(rule.check)
@@ -135,4 +142,52 @@ def chay_rule_tren_ban_ve(
                 fix_hint=rule.fix_hint,
             )
         )
+    return ket_qua
+
+
+def chay_rule_tren_trang_kich_thuoc(
+    page: PageDoc, rules: list[Rule], context: dict | None = None
+) -> list[Finding]:
+    """Chay cac rule nhan 'page' day du va tra ve list vi pham (khac 1 Field don) - tang thu 3
+    cua rule engine, gom ca rule tren page.dimensions (Phase 3) va rule doi chieu ky hieu vision
+    tren page.surface_finishes/gdt_frames (Phase 4, xem primitives_symbols.py). Khac
+    chay_rule_tren_trang: 1 trang co the sinh NHIEU Finding tu CUNG 1 rule. Rule khong thuoc
+    PRIMITIVES_THEO_TRANG_LIST bi bo qua."""
+    context = context or {}
+    ket_qua: list[Finding] = []
+    ma_ban_ve = page.title_block.drawing_no.value or ""
+
+    for rule in rules:
+        if rule.requires or rule.check not in PRIMITIVES_THEO_TRANG_LIST:
+            continue
+        ham = PRIMITIVES_THEO_TRANG_LIST[rule.check]
+        for vi_pham in ham(page, rule.params, context):
+            nguon = vi_pham.get("nguon", "pdf_text")
+            do_tin_cay = vi_pham.get("do_tin_cay", 1.0)
+            if nguon in NGUON_KHONG_CHAC_CHAN:
+                muc: Level = "WARN"
+            elif rule.confidence_gate is not None and do_tin_cay < rule.confidence_gate:
+                muc = "WARN"
+            else:
+                muc = "FAIL"
+
+            bien = dict(rule.params)
+            bien.update(vi_pham)
+            try:
+                noi_dung = rule.message_vi.format(**bien)
+            except (KeyError, IndexError):
+                noi_dung = rule.message_vi
+
+            ket_qua.append(
+                Finding(
+                    rule_id=rule.id,
+                    level=muc,
+                    severity=rule.severity,
+                    message_vi=noi_dung,
+                    drawing_no=ma_ban_ve,
+                    page_no=page.page_no,
+                    fix_hint=rule.fix_hint,
+                    bbox=vi_pham.get("bbox"),
+                )
+            )
     return ket_qua

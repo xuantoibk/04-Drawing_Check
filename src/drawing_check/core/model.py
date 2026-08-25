@@ -18,7 +18,7 @@ T = TypeVar("T")
 class Provenance(BaseModel):
     """Nguon goc va do tin cay cua 1 truong du lieu da trich xuat."""
 
-    source: Literal["pdf_text", "ocr", "vlm", "manual", "dxf"]
+    source: Literal["pdf_text", "pdf_text_loose", "ocr", "vlm", "vision", "manual", "dxf"]
     confidence: float
     page: int
     bbox: Optional[tuple[float, float, float, float]] = None

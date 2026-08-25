@@ -1,0 +1,16 @@
+# Profile du an M2613 - khach hang Alpha Vina Machinery and Automation JSC (cung cong ty voi
+# MH612, khac ma du an noi bo). Chot ngay 2026-08-24 sau khi doi chieu voi nguoi dung tren du
+# lieu that (00_input/BVCT-M2618 PHAY.pdf + BVCT-M2618 SS CHAN GAP.pdf).
+project_id: M2613
+customer: "Alpha Vina Machinery and Automation JSC"
+
+# Giong MH612 - nguoi dung xac nhan truc tiep 2026-08-24: cung cong ty, cung quy uoc.
+standard_profile: iso
+projection_angle: first
+language: [en]
+title_block_template: null
+
+# M2613-M####-<ma_vat_lieu>-[<ma_xu_ly_be_mat>]-<hau_to_gia_cong>
+# Cung bang ma nhu MH612/VPK25 (dung chung 1 cong ty, 1 quy uoc) - xem chu giai day du trong
+# config/projects/vpk25.yaml (moi bo sung MK/PK/MC ngay 2026-08-24) de tranh lap lai.
+drawing_no_pattern: '^M2613-M\d{4}-(A6|A5|SPHC|SS|PO|S2|S3|S4|SC|MK|PK|MC)(-(AW|AB|CE|NI|Cr|Zn))?-(P|L|H|T)$'

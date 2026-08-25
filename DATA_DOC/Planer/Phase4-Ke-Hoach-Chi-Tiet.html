@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Drawing Check — Phase 4: Kế hoạch chi tiết</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #1f2320; --muted: #6b6f6a;
+    --done: #2f7a4f; --done-bg: #e7f3ec;
+    --block: #b3541e; --block-bg: #fbeee2;
+    --todo: #6b6f6a; --todo-bg: #eeeeec;
+    --decide: #a3341f; --decide-bg: #fbe4de;
+    --branchA: #2f6f7a; --branchA-bg: #e5f1f3;
+    --branchB: #8a6d1f; --branchB-bg: #f7f0dc;
+    --accent: #b3541e; --line: #e3e1db;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", -apple-system, sans-serif; padding: 32px 16px 80px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
+  .overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .num { font-size: 1.4rem; font-weight: 700; }
+  .stat .lbl { color: var(--muted); font-size: .82rem; }
+
+  .decide-box { background: var(--decide-bg); border: 1px solid var(--decide);
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+  .decide-box h2 { font-size: 1.02rem; margin: 0 0 10px; color: var(--decide); }
+  .decide-box ol { margin: 0; padding-left: 20px; }
+  .decide-box li { margin-bottom: 8px; font-size: .93rem; }
+  .decide-box li b { display: block; }
+  .decide-box li span { color: var(--muted); font-size: .87rem; }
+
+  .phase { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    margin-bottom: 18px; overflow: hidden; }
+  .phase-head { padding: 14px 18px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .phase-head h2 { font-size: 1.05rem; margin: 0; }
+  .phase-head .pct { font-size: .85rem; color: var(--muted); }
+  ul.tasks { list-style: none; margin: 0; padding: 10px 18px 16px; }
+  ul.tasks li { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line);
+    font-size: .93rem; align-items: flex-start; }
+  ul.tasks li:last-child { border-bottom: none; }
+  .tag { flex: 0 0 auto; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .02em; margin-top: 1px; }
+  .tag.todo { color: var(--todo); background: var(--todo-bg); }
+  .tag.decide { color: var(--decide); background: var(--decide-bg); }
+  .tag.hold { color: var(--block); background: var(--block-bg); }
+  .branch { flex: 0 0 auto; font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+  .branch.a { color: var(--branchA); background: var(--branchA-bg); }
+  .branch.b { color: var(--branchB); background: var(--branchB-bg); }
+  .txt b { display: block; }
+  .txt span.note { color: var(--muted); font-size: .87rem; }
+  .risk { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 18px; margin-bottom: 18px; }
+  .risk h2 { font-size: 1.02rem; margin: 0 0 8px; }
+  .risk ul { margin: 0; padding-left: 20px; font-size: .9rem; }
+  .risk li { margin-bottom: 6px; }
+  footer { max-width: 900px; margin: 24px auto 0; color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Phase 4 — Kế hoạch chi tiết</h1>
+  <p class="sub">Ký hiệu công nghệ + Vision + bản vẽ scan. Lập ngày 2026/08/24, dựa trên
+  <code>DATA_DOC/DrawingCheck_KeHoachXayDung.md</code> §Phase 4. Cập nhật 2026/08/24: đã triển khai
+  xong 4.1 (hạ tầng) và phần đầu 4.2 (render ảnh + cài Label Studio) sau khi người dùng xác nhận
+  "thực hiện toàn bộ".</p>
+
+  <div class="overview">
+    <div class="stat"><div class="num">130/130</div><div class="lbl">Ảnh PNG 300 DPI đã render xong, sẵn sàng gán nhãn</div></div>
+    <div class="stat"><div class="num">RTX 3060</div><div class="lbl">GPU đã xác nhận hoạt động với PyTorch + PaddlePaddle</div></div>
+    <div class="stat"><div class="num">2/2</div><div class="lbl">Nhóm ký hiệu đã chốt bằng bằng chứng thật (khảo sát 6 trang)</div></div>
+  </div>
+
+  <div class="decide-box">
+    <h2>✓ 5 điểm quyết định — đã chốt trong phiên 2026/08/24</h2>
+    <ol>
+      <li><b>1. Danh sách nhóm ký hiệu — CHỐT: chỉ 2 nhóm, dựa trên khảo sát ảnh thật</b>
+        <span>Không phải 9 nhóm đoán từ nghiên cứu tham chiếu. Khảo sát trực tiếp 6 trang thật (trải đều 4 file) chỉ thấy: (a) <code>surface_finish</code> — dấu ✓ độ nhám bề mặt, dạng chung hoặc cục bộ, có/không kèm giá trị Ra; (b) <code>gdt_datum</code> — khung GD&T (⊥, //...) + tam giác chuẩn datum đi kèm, chỉ ở chi tiết phức tạp. Không thấy ký hiệu hàn/xử lý nhiệt/ren trong mẫu khảo sát. Đã đưa vào <code>config/vision/symbol_label_config.xml</code>.</span></li>
+      <li><b>2. Bắt đầu nhánh A ngay — CHỐT: đúng, đã làm</b>
+        <span>Nhánh B (OCR trang scan/SHX) hoãn vô thời hạn, giữ nguyên khuyến nghị ban đầu.</span></li>
+      <li><b>3. Ai gán nhãn 300–500 trang? — CHỐT: người dùng tự gán nhãn</b>
+        <span>Đã cài Label Studio + chuẩn bị sẵn 130 ảnh và file cấu hình nhãn, chờ người dùng bắt đầu.</span></li>
+      <li><b>4. Có bản vẽ scan/SHX thật? — CHỐT: chưa có, giữ nhánh B hoãn</b>
+        <span>0/130 trang thật hiện có thuộc dạng này.</span></li>
+      <li><b>5. Ngưỡng chấp nhận WARN — CHƯA CHỐT, để sau khi có kết quả train thật</b>
+        <span>Chưa có dữ liệu đo để đặt ngưỡng — quay lại quyết định này ở mục 4.4 khi đã chạy thử trên golden set.</span></li>
+    </ol>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.0 — Chuẩn bị & chốt phạm vi</h2><span class="pct">✓ Xong</span></div>
+    <ul class="tasks">
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Chốt danh sách nhóm ký hiệu: surface_finish + gdt_datum</b><span class="note">dựa trên khảo sát ảnh thật, không phải đoán — xem điểm #1</span></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Chốt: chỉ làm Nhánh A, hoãn Nhánh B</b></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Chốt: người dùng tự gán nhãn</b></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.1 — Hạ tầng kỹ thuật (setup, đo tài nguyên)</h2><span class="pct">✓ Xong 5/5</span></div>
+    <ul class="tasks">
+      <li><span class="branch a">Nhánh A</span><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Cài PyTorch 2.11 + CUDA 12.8</b><span class="note">đã xác nhận nhận đúng GPU RTX 3060 qua torch.cuda.is_available()</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Cài paddlepaddle-gpu + paddleocr</b><span class="note">đã xác nhận is_compiled_with_cuda()=True</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Cài transformers (RT-DETR)</b></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Cài Ollama + kéo Qwen3-VL 8B (6.1GB)</b></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Dựng khung <code>src/drawing_check/vision/</code></b><span class="note">detector.py, ocr.py, vlm_fallback.py — interface + kiểu dữ liệu, CHƯA train</span></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.2 — Dữ liệu & gán nhãn (Nhánh A)</h2><span class="pct">2/4 xong — chờ người dùng gán nhãn</span></div>
+    <ul class="tasks">
+      <li><span class="branch a">Nhánh A</span><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Render 130 trang thật → ảnh 300 DPI</b><span class="note">tools/render_pages_for_labeling.py, kiểm tra chất lượng ảnh bằng mắt — rõ nét, thấy đúng các ký hiệu thật</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Cài Label Studio + soạn sẵn file cấu hình nhãn</b><span class="note">config/vision/symbol_label_config.xml — 2 nhãn surface_finish/gdt_datum</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag hold">Cần bạn làm</span><div class="txt"><b>Gán nhãn thật 300–500 trang (bắt đầu bằng 10–20 trang thử)</b><span class="note">xem hướng dẫn khởi động Label Studio ở cuối trang này</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Export nhãn, spot-check chất lượng/nhất quán</b></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.3 — Train & tích hợp detector (Nhánh A)</h2><span class="pct">Chưa bắt đầu — cần 4.2 xong</span></div>
+    <ul class="tasks">
+      <li><span class="branch a">Nhánh A</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Train RT-DETR trên tập đã gán nhãn</b><span class="note">ước tính kế hoạch gốc: 1–2 giờ trên GPU hiện có</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Đánh giá trên tập validation tách riêng</b><span class="note">không dùng chung golden set của rule engine, tránh lẫn 2 loại kiểm chứng</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Ghép chuỗi: detector khoanh vùng → PaddleOCR-VL đọc giá trị</b><span class="note">chuẩn hoá vào Drawing Document Model, Provenance nguồn=vision, confidence thấp hơn PDF text</span></div></li>
+      <li><span class="branch a">Nhánh A</span><span class="tag todo">Chưa làm</span><div class="txt"><b>VLM fallback (Qwen3-VL) cho vùng OCR thất bại/confidence thấp</b></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.4 — Rule engine tầng 4 (symbols)</h2><span class="pct">Chưa bắt đầu — cần 4.3 xong</span></div>
+    <ul class="tasks">
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Viết <code>rules/30_symbols.yaml</code> — CHỈ mức WARN/INFO</b><span class="note">không FAIL cho bất kỳ kết luận nào từ nguồn vision, đúng nguyên tắc kiến trúc + bằng chứng ảo giác 80%+ đã ghi trong kế hoạch gốc</span></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Chạy thử trên golden set hiện có (MH612 sạch + m2613_vpk25 nhiều lỗi cố ý)</b><span class="note">đo số WARN đúng/sai</span></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>Mở rộng golden set có review thủ công cho kết quả vision</b><span class="note">giống cách đã xác nhận 51/51 trang ở Phase 1 — cần người đối chiếu bản vẽ gốc</span></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.5 — Nhánh B: OCR/vision cho trang mất text</h2><span class="pct">HOÃN — chờ dữ liệu thật</span></div>
+    <ul class="tasks">
+      <li><span class="branch b">Nhánh B</span><span class="tag hold">Chờ dữ liệu</span><div class="txt"><b>Thu thập ≥10–20 trang thật thuộc VECTOR_NO_TEXT hoặc RASTER_SCAN</b><span class="note">hiện tại 0/130 trang thuộc dạng này — không có gì để train/kiểm chứng</span></div></li>
+      <li><span class="branch b">Nhánh B</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Chạy lại probe_pdf.py xác nhận phân loại đúng</b></div></li>
+      <li><span class="branch b">Nhánh B</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Render 300 DPI → detector → OCR, đo precision/recall so với đọc tay</b></div></li>
+      <li><span class="branch b">Nhánh B</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Tích hợp vào pipeline chính</b><span class="note">Provenance nguồn=OCR đánh dấu rõ, không trộn lẫn với PDF text</span></div></li>
+    </ul>
+  </div>
+
+  <div class="risk">
+    <h2>Hướng dẫn bắt đầu gán nhãn (mục 4.2)</h2>
+    <ul>
+      <li><b>Bước 1:</b> Label Studio đang chạy sẵn — mở trình duyệt vào <code>http://localhost:8080</code>, tạo tài khoản cục bộ lần đầu (chỉ lưu trên máy này). Nếu sau này tắt máy/đóng terminal, khởi động lại bằng: <code>.venv\Scripts\label-studio.exe start</code>.</li>
+      <li><b>Bước 2:</b> Tạo project mới → đặt tên (vd "Drawing Check - Symbols") → mục "Data Import" tải toàn bộ ảnh trong <code>01_vision_labeling/images/</code> (130 ảnh, đã render sẵn).</li>
+      <li><b>Bước 3:</b> Mục "Labeling Setup" → chọn "Custom template" → dán nguyên nội dung file <code>config/vision/symbol_label_config.xml</code> (đã soạn sẵn 2 nhãn <code>surface_finish</code> và <code>gdt_datum</code>).</li>
+      <li><b>Bước 4:</b> Bắt đầu khoanh vùng: mỗi ký hiệu ✓ độ nhám → khoanh nhãn <code>surface_finish</code>; mỗi khung GD&T (kèm tam giác datum nếu có) → khoanh nhãn <code>gdt_datum</code>. Nên gán thử 10–20 trang trước để đo tốc độ thật/trang, báo lại số liệu để ước lượng lại thời gian cho 300–500 trang.</li>
+      <li><b>Lưu ý:</b> nếu gặp ký hiệu lạ không thuộc 2 nhóm trên (hàn, xử lý nhiệt...), cứ bỏ qua và ghi chú lại — có thể cần thêm nhãn mới sau khi thấy đủ dữ liệu.</li>
+    </ul>
+  </div>
+
+  <div class="risk">
+    <h2>Rủi ro chính cần lưu ý</h2>
+    <ul>
+      <li><b>Bottleneck thật sự là gán nhãn (con người), không phải code</b> — 4.0–4.1 (chuẩn bị+hạ tầng) có thể xong trong vài ngày code/setup, nhưng 4.2 (gán nhãn 300–500 trang) phụ thuộc hoàn toàn vào ai làm và làm nhanh đến đâu.</li>
+      <li><b>Ảo giác cao ở nhóm ít dữ liệu</b> — nghiên cứu tham chiếu trong kế hoạch gốc báo 80%+ ở nhóm ít mẫu (vật liệu, dung sai chung) — bắt buộc WARN only, không FAIL, đúng nguyên tắc "AI không phán xử".</li>
+      <li><b>License AGPL</b> — tuyệt đối không dùng bản Ultralytics YOLO thương mại; dùng RT-DETR như đã chốt trong tech stack.</li>
+      <li><b>Ngân sách VRAM</b> — RT-DETR + PaddleOCR-VL + Qwen3-VL 8B chạy cùng lúc trên 12GB cần đo thật ở bước 4.1, có thể phải chạy tuần tự thay vì song song.</li>
+      <li><b>Nhánh B không có dữ liệu kiểm chứng</b> — nếu code trước khi có bản vẽ scan/SHX thật, rất dễ lặp lại sai lầm đã tránh được ở Phase 1–3 (viết logic không có bằng chứng thật để kiểm chứng).</li>
+    </ul>
+  </div>
+
+</div>
+<footer>File này chỉ lưu cục bộ (không xuất bản lên web) theo đúng quy ước dự án — cập nhật lại tại chỗ khi
+kế hoạch thay đổi, không tạo file mới. Tiến độ tổng dự án vẫn theo dõi ở
+<code>DATA_DOC/Planer/Drawing-Check-Tien-Do.html</code>.</footer>
+</body>
+</html>

@@ -259,28 +259,38 @@ extractor/rule engine riêng của Drawing Check — xem phân biệt ở `maste
 > `## `, để script `quan-ly-nhat-ky.mjs` không nhầm là 1 mục nhật ký) tự xoá khi mục cuối cùng bị
 > dọn hết — script tự thêm lại khi có mục mới đầu tiên sau lần dọn sạch.
 
-## Nhật ký triển khai — Hoàn tất Phase 1 (CLI + Excel/PDF/golden test), bắt đầu Phase 2 (rule đồng bộ nhiều tờ) (2026-08-23)
+## Nhật ký triển khai — Xử lý bản vẽ mới (M2613/VPK25), hoàn tất Phase 2, mở đầu Phase 3 (2026-08-24)
 
-Tiếp nối phiên trước (dựng khung sườn + extractor khung tên thật). Phiên này chốt các quyết định nghiệp vụ còn treo của Phase 1, biến CLI từ stub thành công cụ chạy thật đầu ra Excel/PDF, dựng golden test đầu tiên, mở rộng rule khung tên theo checklist người dùng, rồi bắt đầu Phase 2.
+Tiếp nối phiên trước (hoàn tất Phase 1). Người dùng thêm 3 file bản vẽ mới vào `00_input/` — việc xử lý dữ liệu này lộ ra nhiều lỗi kỹ thuật thật (không phải do dữ liệu mới, mà là lỗi có sẵn từ trước chỉ chưa bị dữ liệu cũ kích hoạt), sửa xong thì hoàn tất luôn 3 mục còn lại của Phase 2. Sau đó mở đầu Phase 3 (kích thước/dung sai/GD&T), làm được đúng phần có bằng chứng thật, dừng đúng lúc ở phần rủi ro cao.
 
 ### Đã hoàn thành
-- Chốt `standard_profile: iso`, `projection_angle: first`, `drawing_no_pattern` cho dự án MH612/Alpha Vina (`config/projects/mh612.yaml`), xác nhận trên bằng chứng trực tiếp từ 51/51 trang thật
-- Điền danh mục vật liệu chính thức 9 mã (`config/catalogs/materials.yaml`), mở khoá rule TB-011
-- Viết CLI `drawing-check run` thật: nối extractor + rule engine + config vào 1 pipeline dùng chung (`pipeline.py`), thay thế bản stub cũ
-- Viết report Excel (2 sheet, tô màu theo mức độ) và PDF khoanh đỏ (annotation pypdf, dùng bbox có sẵn), xuất ra `output/<yyyymmdd-hhmmss>-...`
-- Dựng golden test đầu tiên (`tests/golden/mh612/`), dùng chính file PDF 51 trang đã coi tạm là tiêu chuẩn — PDF không commit git (bí mật kinh doanh), chỉ `expected.yaml` được track, test tự skip trên máy không có file
-- Thêm 5 rule khung tên mới theo checklist người dùng: TB-003/004 (tỷ lệ), TB-005 (dung sai chung), TB-006/008 (số tờ) — nâng tổng số rule khung tên từ 6 lên 11
-- Phát hiện + sửa lỗi định dạng số tờ (giả định `/` sai, thực tế `-`) — đồng thời phát hiện lỗi TƯƠNG TỰ đã có sẵn từ phiên trước trong `grouping.py::tach_sheet` (âm thầm không đọc được số tờ trên dữ liệu thật từ đầu, chưa ai để ý)
-- Bắt đầu Phase 2: thêm 2 rule đồng bộ nhiều tờ MS-001 (thiếu tờ)/MS-002 (revision không khớp giữa các tờ) — cơ chế rule cấp BẢN VẼ mới (`chay_rule_tren_ban_ve`), khác cơ chế cấp TRANG cũ; test bằng dữ liệu giả vì chưa có bản vẽ nhiều tờ thật
+- Push code lên GitHub (`https://github.com/xuantoibk/04-Drawing_Check.git`, nhánh `master`)
+- Xử lý 3 file PDF mới (M2613/VPK25, 79 trang) — phát hiện và sửa 3 lỗi kỹ thuật thật:
+  - Trang bị `/Rotate 90` làm `pypdfium2` đọc sai toạ độ → chuyển sang `pdfplumber` cho trang xoay
+  - Lỗi `gom_dong()` (thuật toán gom dòng) so sánh với ký tự đầu tiên thay vì ký tự gần nhất, gây "trôi" toạ độ — sửa theo kiểu chuỗi liên kết
+  - Cơ chế khớp dự án khớp theo *toàn bộ pattern* thay vì *tiền tố*, khiến chính các mã bản vẽ ghi sai (thứ cần bắt lỗi) bị bỏ qua thay vì báo FAIL — sửa lại khớp theo tiền tố `project_id`
+- Tạo 2 profile dự án mới `m2613.yaml`, `vpk25.yaml` sau khi hỏi-đáp nghiệp vụ với người dùng (xác nhận: cùng chuẩn ISO/góc chiếu thứ nhất như MH612; các số nhánh `VPK25-01`/`VPK25-02`... là lỗi đánh mã thật, cố ý để rule bắt)
+- Bổ sung 6 vật liệu mới vào danh mục chung (`AL6061`, `MIKAĐEN`, `PEEK`, `NHỰAPEEK`, `POMĐEN`, `POMTRẮNG`)
+- Cài chế độ "dò lỏng" theo từ khoá (`trich_khung_ten_do_long`) + cơ chế tự động fallback khi mẫu khung tên chính không đọc được — kiểm chứng bằng test thật (monkeypatch), không chỉ chạy tay
+- Mở rộng golden set: bộ thứ 2 (`m2613_vpk25/`, 79 trang, cố ý nhiều lỗi thật) bên cạnh bộ MH612 cũ (51 trang, sạch)
+- Xuất thử báo cáo Excel + PDF khoanh đỏ cho toàn bộ 130 trang, gửi người dùng xem trực tiếp
+- Mở đầu Phase 3: chuẩn hoá chữ số toàn chiều rộng kiểu Nhật (`text_utils.py`), trích mã lắp ghép ISO 286/JIS B 0401 (`extract/dimension.py`), tầng rule engine thứ 3 (`chay_rule_tren_trang_kich_thuoc`), danh mục `iso286_letters.yaml` (người dùng xác nhận), rule **DIM-001** — kiểm chứng đúng trên 2 điểm ngẫu nhiên đối chiếu ảnh bản vẽ thật, tạm khoá mức WARN (chưa cho FAIL) vì mới có 22 ví dụ thật
+- Thử mở rộng DIM-001 sang trích dung sai +/- riêng lẻ đi kèm — phát hiện lỗi phụ thuộc hướng chữ (dọc/ngang), sai lệch hàng trăm lần trên ~1/3 ca thật → **chủ động rút lại**, không đưa số liệu sai vào hệ thống
+- Khảo sát ký hiệu ren (M4Thru, M5dp10...) — người dùng xác nhận công ty không dùng cấp ren, không cần rule, dừng đúng lúc thay vì xây extractor không có nơi dùng
+
+### Đang dang dở
+Không có — mọi việc bắt đầu trong phiên đều đã hoàn thành hoặc dừng có chủ đích kèm lý do rõ ràng.
 
 ### Quyết định quan trọng đã chốt
-- **11 rule khung tên là đủ cho Phase 1, bỏ mục tiêu 25-30 rule của kế hoạch gốc** — Vì sao: người dùng chủ động xác nhận. Đánh đổi: giảm độ phủ rule so với kế hoạch gốc
-- **Golden set tạm dùng đúng 1 file/51 trang hiện có, coi là tiêu chuẩn tạm thời** — Vì sao: chưa có thêm bản vẽ thật đa dạng hơn. Đánh đổi: precision/recall đo được chưa đủ tin cậy như kế hoạch gốc yêu cầu (30-50 bản, nhiều mẫu/nguồn CAD)
-- **Phase 1 coi là hoàn tất dù golden set còn mỏng, chuyển sang Phase 2** — Vì sao: người dùng chủ động chấp nhận đánh đổi. Đánh đổi: độ tin cậy precision/recall thấp hơn kế hoạch gốc đề ra
-- **Định dạng số tờ chấp nhận cả `x/y` và `x-y`** — Vì sao: dữ liệu thật dùng `-`, người dùng xác nhận chấp nhận cả 2 để phòng dự án/khách hàng khác dùng `/`
-- **Tỷ lệ (scale) hợp lệ: `x:1`/`1:x` theo dãy số ISO, cộng ngoại lệ `2:3`/`3:2`/`2:5`/`5:2`** — Vì sao: dữ liệu thật có 3 trang tỷ lệ không theo dạng `1:x`, người dùng xác nhận đây là tỷ lệ hợp lệ bổ sung, không phải lỗi. Đánh đổi: danh sách ngoại lệ có thể chưa đủ nếu gặp tỷ lệ lạ hơn
+- **VPK25/M2613 dùng CHUNG 1 mẫu khung tên với MH612** — Vì sao: đo lại chính xác bằng `pdfplumber` cho thấy tỷ lệ crop 0.45/0.20 khớp hoàn hảo, ước lượng ban đầu (~62%) chỉ là đọc nhầm ảnh phóng to. Đánh đổi: không cần thêm mẫu khung tên mới như dự tính ban đầu
+- **Khớp dự án theo tiền tố `project_id`, không theo `drawing_no_pattern` đầy đủ** — Vì sao: khớp theo pattern đầy đủ vô tình làm "biến mất" đúng những lỗi cần bắt (mã ghi sai không khớp pattern → bị coi là "không thuộc dự án nào" → bỏ qua thay vì FAIL)
+- **Golden set 2 bộ tách biệt** (MH612 sạch, M2613/VPK25 nhiều lỗi cố ý) — Vì sao: bảo vệ hồi quy cho cả 2 loại dữ liệu khác bản chất
+- **11 rule khung tên là đủ cho Phase 1** — người dùng xác nhận, không cần đạt 25-30 rule như kế hoạch gốc
+- **DIM-001 tạm khoá mức WARN** (confidence_gate=0.9, Dimension confidence=0.8) — Vì sao: mới có 22 ví dụ thật, chưa đủ kiểm chứng như 51 trang khung tên MH612 trước khi cho phép FAIL
+- **Rút lại trích dung sai riêng lẻ** — Vì sao: logic chỉ đúng khi chữ viết dọc, sai nghiêm trọng (lệch hàng trăm lần) khi chữ viết ngang; dữ liệu ảnh hưởng an toàn gia công nên thà không có còn hơn sai. Điều kiện làm lại: cần phát hiện hướng chữ trước, hoặc đợi Phase 4 (nhận diện hình ảnh)
+- **Không làm rule "thiếu cấp ren"** — người dùng xác nhận công ty không dùng quy ước cấp ren
 
 ### Bước tiếp theo (ưu tiên phiên sau)
-1. Chế độ "dò lỏng" theo từ khóa cho khung tên không khớp mẫu Alpha Vina đã biết (kết quả tự động ở mức WARN)
-2. Thêm 3-5 mẫu khung tên khách hàng khác — cần người dùng cung cấp bản vẽ mẫu thật (PDF)
-3. Mở rộng golden set — cần bản vẽ nhiều tờ thật để kiểm chứng MS-001/MS-002 (hiện chỉ test bằng dữ liệu giả), và bản vẽ đa dạng hơn (khác mẫu/nguồn CAD) để precision/recall đáng tin cậy hơn
+1. Phase 4 (nhận diện hình ảnh) — mở khoá lại được dung sai riêng lẻ, khung GD&T, độ nhám theo bề mặt (gốc rễ chung: cần hiểu bố cục 2D thay vì đoán qua toạ độ text)
+2. Thu thập thêm bản vẽ đa dạng hơn để mở rộng golden set / xác nhận thêm profile dự án khác nếu có
+3. Sửa lỗi wildcard `*.pdf` trong CLI (Click tự động mở rộng dấu `*` trên Windows) — đã phát hiện, chưa sửa

@@ -1,0 +1,31 @@
+# Profile du an VPK25 - khach hang Alpha Vina Machinery and Automation JSC (cung cong ty voi
+# MH612/M2613, khac ma du an noi bo). Chot ngay 2026-08-24 sau khi doi chieu voi nguoi dung tren
+# du lieu that (00_input/BVCT- M2618 SUS CHAN GAP.pdf + BVCT-M2618 SS CHAN GAP.pdf).
+project_id: VPK25
+customer: "Alpha Vina Machinery and Automation JSC"
+
+standard_profile: iso
+projection_angle: first
+language: [en]
+title_block_template: null
+
+# VPK25-M####-<ma_vat_lieu>-[<ma_xu_ly_be_mat>]-<hau_to_gia_cong>
+# QUAN TRONG: dung "VPK25-M####-..." - KHONG co so nhanh o giua (vd "VPK25-01-M1002-...",
+# "VPK25-03-M1007-..."). Nguoi dung xac nhan truc tiep 2026-08-24: so nhanh -01/-02/.../-11 dang
+# thay tren ~43/79 trang cua 2 file BVCT* la LOI DANH MA THAT (ghi sai quy uoc), khong phai bien
+# the hop le - CO Y de pattern nay khong khop cac dong do, de TB-002 bat dung nhu thiet ke (du
+# nguoi dung da xac nhan day la ket qua mong muon, chap nhan phan lon lo hang VPK25 hien co se bi
+# FAIL o lan chay dau tien).
+#
+# Danh sach ma vat lieu/xu ly/hau to nguoi dung xac nhan truc tiep 2026-08-24 (dung chung ca
+# M2613 va MH612 - cung 1 cong ty):
+#   vat lieu : A6=A6061/AL6061, A5=A5052, SPHC=thep can nong, SS=SPHC/SS400, PO=POM(den/trang),
+#              S2=SUS201, S3=SUS303, S4=SUS304, SC=S45C, MK=MIKA(den/trong), PK=PEEK/NHUA PEEK,
+#              MC=MC/MC Nylon
+#   xu ly be mat (tuy chon): AW=Anodized White, AB=Anodized Black, CE=Son tinh dien,
+#              NI=Ma Nickel, Cr=Ma Crom, Zn=Ma Kem
+#   hau to gia cong: P=Part(CNC), L=Laser/cat tam, H=Han, T=Tien
+#   KHONG hop le (nguoi dung xac nhan la loi, KHONG dua vao pattern): ma vat lieu "SP" (gan voi
+#   "SS400-TONHOPHAN"), hau to "Q", hau to "C" - cac dong dung nhung ky hieu nay se dung bi
+#   TB-002 bat loi, dung nhu thiet ke.
+drawing_no_pattern: '^VPK25-M\d{4}-(A6|A5|SPHC|SS|PO|S2|S3|S4|SC|MK|PK|MC)(-(AW|AB|CE|NI|Cr|Zn))?-(P|L|H|T)$'

@@ -1,0 +1,42 @@
+# Ket qua da xac nhan thu cong tren 3 file du an M2613/VPK25 (00_input/BVCT*.pdf, 79 trang), coi
+# TAM THOI la tieu chuan doi chieu - chot voi nguoi dung 2026-08-24, cung dot voi
+# config/projects/m2613.yaml + config/projects/vpk25.yaml. Khac MH612: day la lo du lieu THAT SU
+# CO NHIEU LOI (nguoi dung xac nhan truc tiep) - phan lon FAIL la co y, khong phai dau hieu loi
+# cong cu.
+files:
+  - "BVCT- M2618 SUS CHAN GAP.pdf"
+  - "BVCT-M2618 PHAY.pdf"
+  - "BVCT-M2618 SS CHAN GAP.pdf"
+so_trang: 79
+
+# Tong so finding theo muc do, cong don tren ca 79 trang (ca 3 file).
+tong_ket:
+  FAIL: 70
+  WARN: 79
+  INFO: 0
+
+# Danh sach loi CU THE da biet truoc, phai luon con bi bat dung.
+loi_biet_truoc:
+  # TB-002: ~69/79 trang VPK25 ghi them so nhanh sai quy uoc (vd "VPK25-01-...", "VPK25-03-...")
+  # thay vi dung "VPK25-M####-...". Nguoi dung xac nhan day la loi that, muon rule bat toan bo -
+  # chi chon 2 vi du dai dien (dau va cuoi danh sach) de kiem tra khong mat rule, khong liet ke
+  # het ca 69 dong.
+  - file: "BVCT- M2618 SUS CHAN GAP.pdf"
+    trang: 1
+    rule_id: TB-002
+    drawing_no: VPK25-03-M1007-S4-L
+  - file: "BVCT-M2618 SS CHAN GAP.pdf"
+    trang: 18
+    rule_id: TB-002
+    drawing_no: VPK25-02-M2011
+  # TB-011: vat lieu "SS400-TONHOPHAN" gan voi ma "SP" - nguoi dung xac nhan ca ma va mo ta vat
+  # lieu deu sai quy uoc, khong dua vao danh muc de rule bat dung.
+  - file: "BVCT-M2618 SS CHAN GAP.pdf"
+    trang: 17
+    rule_id: TB-011
+    drawing_no: VPK25-02-M1005-SS-CE-H
+  # M2613 (10 trang) phai KHONG co FAIL nao - dung dinh dang tu dau, kiem tra 1 trang dai dien.
+  - file: "BVCT-M2618 PHAY.pdf"
+    trang: 1
+    drawing_no: M2613-M6001-A6-AW-P
+    khong_co_fail: true

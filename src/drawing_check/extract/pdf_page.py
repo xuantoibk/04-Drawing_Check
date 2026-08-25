@@ -11,7 +11,10 @@ import hashlib
 from pathlib import Path
 from typing import NamedTuple
 
+import pdfplumber
 import pypdfium2 as pdfium
+
+from drawing_check.extract.text_utils import chuan_hoa_fullwidth
 
 PT_TO_MM = 25.4 / 72.0
 
@@ -22,6 +25,16 @@ def mm(pt: float) -> float:
 
 def tinh_hash_file(duong_dan: Path) -> str:
     return hashlib.sha1(duong_dan.read_bytes()).hexdigest()[:12]
+
+
+def render_trang_thanh_anh(page: pdfium.PdfPage, dpi: int = 300):
+    """Render 1 trang PDF thanh anh PIL trong bo nho - dau vao cho detector Vision (Phase 4,
+    xem vision/detector.py::detect_symbols). Dung 300 DPI vi da kiem chung du chi tiet de thay
+    ky hieu GD&T/do nham nho (xem tools/render_pages_for_labeling.py - cung DPI voi luc gan
+    nhan, tranh lech phan giai giua luc train va luc chay that)."""
+    scale = dpi / 72.0
+    bitmap = page.render(scale=scale)
+    return bitmap.to_pil()
 
 
 class Tu(NamedTuple):
@@ -41,7 +54,8 @@ def lay_ky_tu_trong_vung(
     x1: float | None = None,
     y0_bottom: float = 0.0,
 ) -> list[tuple[float, float, float, float, str]]:
-    """Lay danh sach ky tu (left, bottom, right, top, text) nam trong vung [x0,x1] x [y0_bottom,y1_top]."""
+    """Lay danh sach ky tu (left, bottom, right, top, text) nam trong vung [x0,x1] x [y0_bottom,y1_top].
+    Tu dong chuan hoa ky tu toan chieu rong (xem extract/text_utils.py)."""
     w, h = page.get_size()
     x1 = w if x1 is None else x1
     textpage = page.get_textpage()
@@ -52,7 +66,7 @@ def lay_ky_tu_trong_vung(
         if not ch.strip():
             continue
         if x0 <= left and top <= y1_top and right <= x1 and bottom >= y0_bottom:
-            ket_qua.append((left, bottom, right, top, ch))
+            ket_qua.append((left, bottom, right, top, chuan_hoa_fullwidth(ch)))
     return ket_qua
 
 
@@ -64,6 +78,14 @@ def gom_dong(
     Da kiem chung tren du lieu that: dau cham/gach ngang co 'top' thap hon han chu cai cung
     dong (vd "." trong "B.X.TOI") nen gom theo 'top' se tach nham dau cham ra dong rieng; gom
     theo 'bottom' (baseline) on dinh hon vi hau het ky tu deu dat tren cung 1 duong baseline.
+
+    So sanh THEO CHUOI (chain-linkage): moi ky tu so voi ky tu VUA THEM TRUOC DO, khong phai ky
+    tu DAU TIEN cua dong. (2026-08-24) Phat hien tren du lieu that (mau khung ten du an M2613,
+    trang bi xoay doc qua pdfplumber): neu so co dinh voi ky tu dau, sai so 'bottom' cong don qua
+    nhieu ky tu lien tiep (vd ten cong ty 2 dong gan sat khung tren) co the vuot nguong dung ngay
+    tai ranh gioi truong can doc (SHEET bi tach rieng dong dù chi cach gia tri ke ben 0.7pt), gay
+    mat du lieu. Da xac nhan sua theo chuoi khong lam hong ket qua tren toan bo 51 trang MH612 da
+    kiem chung truoc do (chay lai golden test sau khi sua).
     """
     chars_sorted = sorted(chars, key=lambda c: (-c[1], c[0]))
     dong_list: list[list] = []
@@ -74,9 +96,9 @@ def gom_dong(
             if cur:
                 dong_list.append(cur)
             cur = [c]
-            cur_bottom = c[1]
         else:
             cur.append(c)
+        cur_bottom = c[1]
     if cur:
         dong_list.append(cur)
     return dong_list
@@ -122,5 +144,49 @@ def lay_dong_tu_trong_vung(
 ) -> list[list[Tu]]:
     """Ham tong hop: cat vung -> gom dong -> tach tu. Dung truc tiep trong titleblock.py."""
     chars = lay_ky_tu_trong_vung(page, x0, y1_top, x1, y0_bottom)
+    dong_list = gom_dong(chars, nguong_dong)
+    return [gom_tu_trong_dong(dong, nguong_tu) for dong in dong_list]
+
+
+def lay_ky_tu_trong_vung_pdfplumber(
+    trang: pdfplumber.page.Page,
+    x0: float,
+    y1_top: float,
+    x1: float | None = None,
+    y0_bottom: float = 0.0,
+) -> list[tuple[float, float, float, float, str]]:
+    """Ban sao cua lay_ky_tu_trong_vung nhung doc ky tu qua pdfplumber thay vi pypdfium2.
+
+    Can dung cho trang bi /Rotate != 0: pypdfium2 tra toa do RAW khong khop voi page.get_size()
+    tren trang xoay (da kiem chung tren du lieu that - xem ghi chu trong titleblock.py), trong
+    khi pdfplumber tu dong xu ly dung rotation. Doi truc y tu he tren-xuong (top/bottom cua
+    pdfplumber, goc o tren) sang he duoi-len (goc o duoi) da dung xuyen suot module nay."""
+    h = trang.height
+    w = trang.width
+    x1 = w if x1 is None else x1
+    ket_qua = []
+    for ch in trang.chars:
+        text = ch.get("text", "")
+        if not text.strip():
+            continue
+        left, right = ch["x0"], ch["x1"]
+        bottom, top = h - ch["bottom"], h - ch["top"]
+        if x0 <= left and top <= y1_top and right <= x1 and bottom >= y0_bottom:
+            ket_qua.append((left, bottom, right, top, chuan_hoa_fullwidth(text)))
+    return ket_qua
+
+
+def lay_dong_tu_trong_vung_pdfplumber(
+    trang: pdfplumber.page.Page,
+    x0: float,
+    y1_top: float,
+    x1: float | None = None,
+    y0_bottom: float = 0.0,
+    nguong_dong: float = 5.5,
+    nguong_tu: float = 3.0,
+) -> list[list[Tu]]:
+    """Ban sao cua lay_dong_tu_trong_vung dung cho trang bi xoay - xem lay_ky_tu_trong_vung_pdfplumber.
+    Tai su dung NGUYEN gom_dong/gom_tu_trong_dong, chi doi nguon ky tu."""
+    chars = lay_ky_tu_trong_vung_pdfplumber(trang, x0, y1_top, x1, y0_bottom)
     dong_list = gom_dong(chars, nguong_dong)
     return [gom_tu_trong_dong(dong, nguong_tu) for dong in dong_list]

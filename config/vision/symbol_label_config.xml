@@ -1,0 +1,17 @@
+<!--
+Cau hinh giao dien gan nhan Label Studio - Phase 4, muc 4.2.
+
+Chi 2 nhom ky hieu duoc xac nhan qua khao sat anh that (khong phai 9 nhom doan tu nghien cuu
+tham chieu - xem DATA_DOC/Planer/Phase4-Ke-Hoach-Chi-Tiet.html):
+  - surface_finish : dau check do nham be mat (co/khong kem gia tri Ra), dang chung hoac cuc bo
+  - gdt_datum       : khung GD&T (vuong goc/song song/...) + tam giac chuan datum di kem
+
+Import vao Label Studio: New Project > Labeling Setup > Custom template > dan nguyen file nay.
+-->
+<View>
+  <Image name="image" value="$image" zoom="true" zoomControl="true"/>
+  <RectangleLabels name="label" toName="image">
+    <Label value="surface_finish" background="#2f6f7a"/>
+    <Label value="gdt_datum" background="#a3341f"/>
+  </RectangleLabels>
+</View>

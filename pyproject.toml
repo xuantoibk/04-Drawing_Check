@@ -16,6 +16,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest"]
+vision = [
+    "torch",
+    "torchvision",
+    "transformers",
+    "scipy",
+    "paddlepaddle-gpu",
+    "paddleocr",
+]
 
 [project.scripts]
 drawing-check = "drawing_check.cli:app"

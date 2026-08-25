@@ -1,0 +1,23 @@
+# Rule nhom kich thuoc/dung sai (Phase 3, lat cat dau tien - xem docs/Source/Project-Remember.md
+# muc Phase 3 de biet ly do thu hep pham vi). Rule o day chay boi
+# engine/runner.py::chay_rule_tren_trang_kich_thuoc tren page.dimensions (list), KHAC voi
+# 10_title_block.yaml (chay tren 1 truong khung ten) va 15_multisheet.yaml (chay tren quan he
+# giua cac trang).
+version: 1
+ruleset: dimension
+applies_to:
+  standard: [iso, jis]
+
+rules:
+  - id: DIM-001
+    name: "Ma lap ghep sai cu phap ISO 286/JIS B 0401"
+    severity: critical
+    check: fit_code_sai_cu_phap
+    # confidence_gate=0.9 > do_tin_cay=0.8 cua Dimension moi trich (xem extract/dimension.py) -
+    # CO Y de rule nay TAM THOI chi len WARN, chua len FAIL, cho toi khi kiem chung nhieu hon
+    # (moi co 22 vi du that tinh den 2026-08-24, chua du nhu 51 trang khung ten MH612 truoc khi
+    # cho phep TB-001..TB-011 len FAIL). Nang len 1.0 khi da kiem chung du.
+    confidence_gate: 0.9
+    params: {}
+    message_vi: "Ma lap ghep '{gia_tri}' khong dung cu phap ISO 286/JIS B 0401."
+    fix_hint: "Kiem tra lai chu cai lech chuan va cap chinh xac (vd H7, g6) theo dung bang ISO 286."

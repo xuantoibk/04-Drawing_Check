@@ -21,6 +21,11 @@ Phat hien quan trong khi hieu chinh tren du lieu that (ghi lai de khong quen):
 - Ky hieu goc chieu (PROJ-001/002) la HINH VE (cone/circle), khong phai text - KHONG trich xuat
   duoc bang duong PDF text o bat ky mau nao. Field 'projection' luon value=None, confidence thap
   de rule engine tu ha xuong WARN thay vi bao sai FAIL (xem confidence_gate trong rules yaml).
+- (2026-08-24) Trang bi /Rotate != 0 (kiem chung tren 00_input/BVCT*.pdf, du an M2613) lam
+  pypdfium2 tra toa do ky tu RAW khong khop voi page.get_size() - crop theo ty le nhu binh
+  thuong se khong lay duoc gi (rows rong). Tuy ty le crop 0.45/0.20 (A3 ngang) VAN DUNG cho mau
+  khung ten nay (da do lai bang pdfplumber, khong phai loi mau khung ten khac) - chi can doi
+  nguon doc ky tu sang pdfplumber cho cac trang xoay (xem trich_khung_ten_alpha_vina).
 
 GIOI HAN DA BIET (chua sua, khong anh huong 6 rule Phase 1 hien co vi khong rule nao dung field
 'revision'): tren khoang 20/51 trang thu nghiem, field 'revision' bi doc nham thanh chu cai vung
@@ -35,14 +40,15 @@ from __future__ import annotations
 import re
 from typing import Callable
 
+import pdfplumber
 import pypdfium2 as pdfium
 
 from drawing_check.core.model import Field, PageKind, Provenance, TitleBlock
-from drawing_check.extract.pdf_page import Tu, lay_dong_tu_trong_vung
+from drawing_check.extract.pdf_page import Tu, lay_dong_tu_trong_vung, lay_dong_tu_trong_vung_pdfplumber
 
 RE_ISO_TOL = re.compile(r"ISO\s*[\d.\-]+")
 RE_CO_SO = re.compile(r"[0-9]")
-RE_CHI_SO_HAI_CHAM = re.compile(r"^[\d:]+$")
+RE_CHI_SO_HAI_CHAM = re.compile(r"^[\d.:]+$")  # cho phep ty le thap phan, vd "1.5:1" (xac nhan 2026-08-24)
 RE_TEN_HOP_LE = re.compile(r"^[A-Za-z.]+$")
 
 # Cac nhan da biet trong bang khung ten - dung de CHAN gom nham khi 1 truong bi loi/rong (vd
@@ -193,13 +199,32 @@ def _vung_khung_ten(page: pdfium.PdfPage) -> tuple[float, float]:
     return 0.85, 0.24  # A4 dung
 
 
-def trich_khung_ten_alpha_vina(page: pdfium.PdfPage, page_no: int) -> TitleBlock:
+def trich_khung_ten_alpha_vina(
+    page: pdfium.PdfPage,
+    page_no: int,
+    trang_pdfplumber: pdfplumber.page.Page | None = None,
+) -> TitleBlock:
+    """trang_pdfplumber CHI can truyen khi page.get_rotation() != 0 - pypdfium2 tra toa do RAW
+    khong khop voi page.get_size() tren trang bi xoay (da kiem chung 2026-08-24 tren du lieu
+    that: ky tu "V" cua ma ban ve nam o y~995 trong khi get_size() bao cao chi 842pt). pdfplumber
+    tu dong xu ly dung rotation nen dung thay the cho duong pypdfium2 trong truong hop nay. Trang
+    khong xoay (da kiem chung tren toan bo 51 trang MH612) van dung pypdfium2 nhu cu - nhanh hon
+    ~40 lan, khong doi hanh vi/toc do da co."""
     w, h = page.get_size()
     frac_w, frac_h = _vung_khung_ten(page)
     x0 = w * (1 - frac_w)
     y1 = h * frac_h
-    rows = lay_dong_tu_trong_vung(page, x0, y1)
+    if page.get_rotation() != 0 and trang_pdfplumber is not None:
+        rows = lay_dong_tu_trong_vung_pdfplumber(trang_pdfplumber, x0, y1)
+    else:
+        rows = lay_dong_tu_trong_vung(page, x0, y1)
+    return _dung_rows_de_tao_titleblock(rows, page_no)
 
+
+def _dung_rows_de_tao_titleblock(rows: list[list[Tu]], page_no: int) -> TitleBlock:
+    """Parse toan bo truong TitleBlock tu 'rows' da cat vung san - logic dung chung cho ca
+    trich_khung_ten_alpha_vina (vung crop chinh xac theo mau da biet) va trich_khung_ten_do_long
+    (vung la ca trang, do long theo tu khoa) - 2 ham do CHI khac nhau o cach lay 'rows'."""
     projection_khong_doc_duoc = Field(
         value=None, prov=Provenance(source="pdf_text", confidence=0.3, page=page_no)
     )
@@ -221,6 +246,45 @@ def trich_khung_ten_alpha_vina(page: pdfium.PdfPage, page_no: int) -> TitleBlock
         sheet=_field_don_gian(rows, "SHEET", page_no),
         size=Field(value=None, prov=Provenance(source="pdf_text", confidence=0.0, page=page_no)),
     )
+
+
+def trich_khung_ten_do_long(
+    page: pdfium.PdfPage,
+    page_no: int,
+    trang_pdfplumber: pdfplumber.page.Page | None = None,
+) -> TitleBlock:
+    """Che do 'do long' (Phase 2, DATA_DOC/DrawingCheck_KeHoachXayDung.md): tim khung ten bang
+    TU KHOA nhan (MATERIAL/SHEET/DWG/DESIGNED/...) tren CA TRANG, KHONG dung toa do/ty le co dinh
+    theo mau da biet nhu trich_khung_ten_alpha_vina - dung khi gap mau khung ten LA (chua nhan
+    dien duoc cong ty/khach hang). Tai su dung NGUYEN logic parse field qua
+    _dung_rows_de_tao_titleblock (cac ham do von da tim theo TEXT nhan, khong phu thuoc toa do)
+    - chi khac cach lay 'rows': quet CA TRANG thay vi vung hep da do dac cho 1 mau cu the.
+
+    Ket qua LUON bi ha nguon xuong 'pdf_text_loose' - engine/runner.py tu dong ha MOI rule xuong
+    WARN cho nguon nay (xem NGUON_KHONG_CHAC_CHAN), khong bao gio len FAIL, vi quet ca trang de
+    nham voi ghi chu/kich thuoc/note ky thuat hon nhieu so voi crop hep theo mau da kiem chung."""
+    w, h = page.get_size()
+    if page.get_rotation() != 0 and trang_pdfplumber is not None:
+        rows = lay_dong_tu_trong_vung_pdfplumber(trang_pdfplumber, 0, h, w, 0)
+    else:
+        rows = lay_dong_tu_trong_vung(page, 0, h, w, 0)
+    tb = _dung_rows_de_tao_titleblock(rows, page_no)
+    return _ha_do_tin_cay(tb, page_no)
+
+
+def _ha_do_tin_cay(tb: TitleBlock, page_no: int) -> TitleBlock:
+    """Gan lai nguon 'pdf_text_loose' cho MOI truong cua TitleBlock, giu nguyen value/confidence/
+    bbox - dung sau khi trich xuat qua che do do long (xem trich_khung_ten_do_long)."""
+    du_lieu = {}
+    for ten in TitleBlock.model_fields:
+        f: Field = getattr(tb, ten)
+        du_lieu[ten] = Field(
+            value=f.value,
+            prov=Provenance(
+                source="pdf_text_loose", confidence=f.prov.confidence, page=page_no, bbox=f.prov.bbox
+            ),
+        )
+    return TitleBlock.model_validate(du_lieu)
 
 
 def _field_ngay_thiet_ke(rows: list[list[Tu]], page_no: int) -> Field[str]:

@@ -1,0 +1,21 @@
+# Rule nhom ky hieu cong nghe tu vision (Phase 4, lat cat dau tien - xem
+# DATA_DOC/Planer/Phase4-Ke-Hoach-Chi-Tiet.html). Rule o day chay boi
+# engine/runner.py::chay_rule_tren_trang_kich_thuoc (dung chung voi 20_dimension.yaml).
+#
+# QUAN TRONG: moi ket qua tu vision (nguon='vision' trong primitives_symbols.py) LUON bi ha
+# xuong WARN boi runner (xem NGUON_KHONG_CHAC_CHAN) - dung nguyen tac kien truc cot loi "AI chi
+# trich xuat, khong bao gio phan xu". severity o day (vd "major") chi la nhan phan loai muc do,
+# KHONG lam rule nay len duoc FAIL.
+version: 1
+ruleset: symbols
+applies_to:
+  standard: [iso, jis]
+
+rules:
+  - id: SYM-001
+    name: "Kich thuoc co dung sai lap ghep nhung khong thay ky hieu do nham be mat"
+    severity: major
+    check: thieu_do_nham_khi_co_dung_sai_lap_ghep
+    params: {}
+    message_vi: "Trang co kich thuoc dung sai lap ghep '{gia_tri}' nhung khong phat hien ky hieu do nham be mat nao tren trang - can nguoi xem lai (co the vision bo sot, hoac ban ve thieu that)."
+    fix_hint: "Kiem tra lai bang mat: neu be mat lap ghep can gia cong chinh xac ma khong ghi do nham, bo sung ky hieu Ra. Neu ky hieu co san nhung vision bo sot, ghi nhan de cai thien model sau."

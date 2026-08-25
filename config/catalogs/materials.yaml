@@ -7,6 +7,11 @@
 # LUU Y: trang 21 cua file mau doc duoc "A66061" (thua 1 so so voi "A6061") - da xac minh KHONG
 # phai loi trich xuat, nhieu kha nang la loi danh may that tren ban ve goc - CO Y KHONG dua vao
 # danh muc de rule TB-011 bat loi nay dung nhu thiet ke.
+#
+# (2026-08-24) Bo sung tu 79 trang du an M2613/VPK25 (00_input/BVCT*.pdf) - nguoi dung xac nhan
+# truc tiep tung gia tri. "AL6061" la cach viet khac hop le cua "A6061" (khong phai loi danh may -
+# khac voi "A66061" o tren). KHONG dua vao day: "SS400-TONHOPHAN" (gan voi ma "SP" - nguoi dung
+# xac nhan ma nay SAI, can de TB-002/TB-011 bat loi dung thiet ke).
 materials:
   - A6061
   - SPHC
@@ -17,3 +22,10 @@ materials:
   - SUS303
   - SUS304
   - S45C
+  - AL6061
+  - MIKAĐEN
+  - PEEK
+  - NHỰAPEEK
+  - POMĐEN
+  - POMTRẮNG
+  - PU

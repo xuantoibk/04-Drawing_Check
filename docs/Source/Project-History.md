@@ -109,3 +109,35 @@ Không có — mọi việc bắt đầu trong phiên đều đã hoàn thành h
 1. Phase 4 (nhận diện hình ảnh) — mở khoá lại được dung sai riêng lẻ, khung GD&T, độ nhám theo bề mặt (gốc rễ chung: cần hiểu bố cục 2D thay vì đoán qua toạ độ text)
 2. Thu thập thêm bản vẽ đa dạng hơn để mở rộng golden set / xác nhận thêm profile dự án khác nếu có
 3. Sửa lỗi wildcard `*.pdf` trong CLI (Click tự động mở rộng dấu `*` trên Windows) — đã phát hiện, chưa sửa
+
+## Nhật ký triển khai — Triển khai Phase 4 (Vision): hạ tầng, gán nhãn, train RT-DETR, tích hợp rule đầu tiên (2026-08-25)
+
+Tiếp nối phiên trước (mở đầu Phase 3, dừng đúng lúc trước Phase 4). Phiên này đi hết vòng đời Phase 4 lát cắt đầu: từ dựng hạ tầng tới có 1 rule sống chạy được trên dữ liệu thật.
+
+### Đã hoàn thành
+- Lập kế hoạch chi tiết Phase 4, tách rõ Nhánh A (ký hiệu trên trang đọc text tốt — làm ngay) và Nhánh B (OCR trang scan/SHX — hoãn, chưa có dữ liệu thật)
+- Cài hạ tầng: PyTorch 2.11+CUDA 12.8, PaddlePaddle-GPU+PaddleOCR, transformers (RT-DETR), Ollama+Qwen3-VL 8B, Label Studio — xác nhận chạy được trên GPU RTX 3060
+- Chuyển cache AI dùng chung sang ổ G (`G:\ThuvienAI`), giải phóng ổ C từ 17GB lên ~56GB trống — áp dụng mọi dự án trên máy
+- Khảo sát ảnh thật (không đoán) → chốt chỉ 2 nhóm ký hiệu cần bắt: `surface_finish`, `gdt_datum` (khác 9 nhóm đoán trong kế hoạch gốc)
+- Xây công cụ render PDF→ảnh + xuất dataset COCO từ Label Studio
+- Gán nhãn qua Label Studio: 130 ảnh (batch cũ) + phần lớn 125 ảnh batch mới (`00_input/joint/`, 33 file) — tổng 217+ ảnh, 616+ box
+- Fine-tune RT-DETR — phát hiện lỗi phương pháp nghiêm trọng: đánh giá bằng ngưỡng cố định 0.5 khiến tưởng model "không học được gì", dẫn tới train thêm ~2.5 giờ vô ích; rà lại bằng quét nhiều ngưỡng + so sánh toàn bộ 14 checkpoint mới phát hiện model đã tốt nhất ngay từ epoch 40 của lần train ĐẦU TIÊN (F1=0.940)
+- Tích hợp detector vào pipeline chính (cờ `--vision`, mặc định TẮT), rule đầu tiên **SYM-001** — kiểm chứng trên 51 trang PDF thật, đúng logic
+- Phát hiện + sửa 1 lỗi thật: rule không phân biệt "vision đã chạy và không thấy gì" với "vision chưa chạy" — sửa bằng cờ context, không đổi cấu trúc PageDoc
+- Viết OCR (PaddleOCR) và VLM fallback (Qwen3-VL) — VLM xác nhận hoạt động đúng; OCR bị chặn bởi xung đột phiên bản gói trên Windows
+- Commit + push lên GitHub (gồm cả phần Phase 2/3 tồn đọng từ phiên trước)
+
+### Đang dang dở
+- ~38 ảnh còn lại trong project 8 Label Studio chưa gán nhãn — việc thủ công, người dùng tự làm tiếp
+
+### Quyết định quan trọng đã chốt
+- **Checkpoint tốt nhất = epoch 40 của lần train ĐẦU TIÊN**, không phải các lần train thêm sau — Vì sao: so sánh khách quan cho F1 cao nhất; train thêm gây overfit trên dữ liệu ít
+- **`--vision` mặc định TẮT** — không bắt buộc GPU cho luồng Phase 1-3/golden test hiện có
+- **Chỉ 2 nhóm ký hiệu, không phải 9** — bằng chứng thật, không suy đoán
+- **Cache AI dùng chung tại `G:\ThuvienAI`** — áp dụng mọi dự án trên máy
+- **OCR tạm hoãn** — lỗi môi trường thật, chưa có rule cần
+
+### Bước tiếp theo (ưu tiên phiên sau)
+1. Gán nốt ảnh còn lại project 8, cân nhắc train lại nếu `gdt_datum` cần thêm dữ liệu
+2. Nếu cần đọc giá trị Ra/GD&T cụ thể: sửa lỗi môi trường OCR, hoặc dùng VLM fallback đã hoạt động
+3. Mở rộng golden set có vision (người review thủ công đối chiếu bản vẽ gốc)

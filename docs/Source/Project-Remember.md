@@ -120,3 +120,41 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
   CỘNG THÊM 4 ngoại lệ đã xác nhận với người dùng: `2:3`, `3:2`, `2:5`, `5:2`. Danh sách ngoại lệ
   có thể chưa đầy đủ nếu gặp tỷ lệ khác lạ hơn trên bản vẽ mới — hỏi lại người dùng thay vì tự
   thêm ngoại lệ.
+
+## Phase 4 (Vision) — quyết định còn hiệu lực (2026-08-25)
+
+- **Chỉ 2 nhóm ký hiệu cần Vision bắt: `surface_finish` và `gdt_datum`** — KHÔNG phải "9 nhóm"
+  nêu trong kế hoạch gốc (con số đó chỉ là suy đoán theo 1 nghiên cứu tham chiếu ngoài, không
+  phải quyết định cho công ty này). Chốt bằng khảo sát trực tiếp ảnh thật, không phải suy diễn.
+  Cấu hình nhãn tại `config/vision/symbol_label_config.xml`.
+- **RT-DETR fine-tune trên dữ liệu ít (~200 ảnh) PHẢI đánh giá bằng cách quét NHIỀU ngưỡng tin
+  cậy (vd 0.03-0.3), KHÔNG dùng ngưỡng mặc định 0.5** — model DETR-family có thang đo confidence
+  rất thấp trong chế độ này ngay cả khi đã học tốt (IoU định vị có thể đạt 0.94-0.99 trong khi
+  confidence tuyệt đối chỉ ~0.05-0.15). Dùng ngưỡng 0.5 từng khiến hiểu nhầm nghiêm trọng "model
+  chưa học được gì" sau 100 epoch, dẫn tới train thêm ~2.5 giờ vô ích. Xem
+  `tools/compare_all_checkpoints.py`.
+- **Với tập ~200 ảnh, model bắt đầu overfit RẤT SỚM (epoch 40-60) — train thêm KHÔNG đồng nghĩa
+  tốt hơn.** Checkpoint tốt nhất đã xác nhận là epoch 40 của lần train ĐẦU TIÊN (F1=0.940), mọi
+  checkpoint từ các lần train thêm sau đó đều tệ dần (F1 xuống tới 0.48). LUÔN giữ lại và so sánh
+  checkpoint sớm (vd epoch 20/40/60) thay vì chỉ tin checkpoint cuối cùng/loss thấp nhất trên tập
+  train. Model dùng hiện tại: `models/rtdetr_symbols_v1/best/` (KHÔNG commit git — file nhị phân
+  lớn, tái tạo được bằng `tools/train_symbol_detector.py`), ngưỡng vận hành **0.08**.
+- **`drawing-check run` có cờ `--vision`/`--no-vision`, MẶC ĐỊNH TẮT** — bật Vision cần
+  GPU/torch/transformers + model đã train, chậm hơn nhiều so với chỉ đọc text (Phase 1-3). Không
+  được đổi mặc định thành bật, tránh bắt buộc GPU cho golden test/luồng chạy thường.
+- **Rule đối chiếu Vision↔Dimension (vd SYM-001) PHẢI gate qua `context['vision_enabled']`**,
+  KHÔNG được chỉ dựa vào `page.surface_finishes`/`page.gdt_frames` rỗng — rỗng có thể nghĩa là
+  "Vision đã chạy và không thấy gì" HOẶC "Vision chưa chạy" (giá trị mặc định giống hệt nhau),
+  gây WARN sai hàng loạt nếu không phân biệt. Xem `engine/primitives_symbols.py`.
+- **Cache thư viện AI (HuggingFace/pip/torch/Ollama) dùng CHUNG toàn máy tại `G:\ThuvienAI`**
+  (biến môi trường `HF_HOME`/`TORCH_HOME`/`PIP_CACHE_DIR`/`OLLAMA_MODELS`, đặt cấp User) — áp
+  dụng cho MỌI dự án trên máy này, không riêng Drawing Check. Chỉ có hiệu lực với terminal mở SAU
+  thời điểm đặt biến.
+- **OCR (`vision/ocr.py`, dùng PaddleOCR) đã viết code nhưng CHƯA CHẠY ĐƯỢC** — lỗi môi trường
+  thật: `paddleocr` 3.7.0 (bản PyPI mới nhất) cần API `paddlepaddle-gpu` mới hơn bản GPU-Windows
+  mới nhất có qua pip (2.6.2, đã xác nhận không có bản cao hơn). CHƯA sửa vì chưa có rule nào cần
+  đọc giá trị chữ cụ thể (SYM-001 chỉ cần biết có/không có ký hiệu). Cách sửa nếu cần: cài
+  paddlepaddle-gpu từ index riêng paddlepaddle.org.cn (ngoài PyPI), hoặc hạ cấp paddleocr.
+- **VLM fallback (`vision/vlm_fallback.py`, Qwen3-VL qua Ollama) ĐÃ XÁC NHẬN HOẠT ĐỘNG ĐÚNG** trên
+  ảnh thật (đọc đúng cả ký hiệu lẫn giá trị Ra) nhưng CHƯA được gọi từ `pipeline.py` — chưa có
+  rule nào cần dùng.

@@ -67,19 +67,23 @@
   <p class="sub">Ký hiệu công nghệ + Vision + bản vẽ scan. Lập ngày 2026/08/24, dựa trên
   <code>DATA_DOC/DrawingCheck_KeHoachXayDung.md</code> §Phase 4. Cập nhật 2026/08/24: đã triển khai
   xong 4.1 (hạ tầng) và phần đầu 4.2 (render ảnh + cài Label Studio) sau khi người dùng xác nhận
-  "thực hiện toàn bộ".</p>
+  "thực hiện toàn bộ". Cập nhật 2026/08/25: thêm nhóm thứ 3 (ký hiệu góc chiếu) — xem mục 4.6, giải
+  pháp KHÁC surface_finish/gdt_datum (so khớp mẫu ảnh, không phải RT-DETR) vì chỉ cần cho ĐÚNG mẫu
+  khung tên Alpha Vina hiện có. RT-DETR cho ký hiệu góc chiếu ở mẫu khung tên KHÁC (khách hàng khác)
+  vẫn còn trong kế hoạch — CHƯA LÀM, không phải phương án bị bỏ.</p>
 
   <div class="overview">
     <div class="stat"><div class="num">130/130</div><div class="lbl">Ảnh PNG 300 DPI đã render xong, sẵn sàng gán nhãn</div></div>
     <div class="stat"><div class="num">RTX 3060</div><div class="lbl">GPU đã xác nhận hoạt động với PyTorch + PaddlePaddle</div></div>
-    <div class="stat"><div class="num">2/2</div><div class="lbl">Nhóm ký hiệu đã chốt bằng bằng chứng thật (khảo sát 6 trang)</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">Nhóm ký hiệu đã chốt bằng bằng chứng thật (2 qua RT-DETR + 1 qua so khớp mẫu ảnh)</div></div>
   </div>
 
   <div class="decide-box">
     <h2>✓ 5 điểm quyết định — đã chốt trong phiên 2026/08/24</h2>
     <ol>
       <li><b>1. Danh sách nhóm ký hiệu — CHỐT: chỉ 2 nhóm, dựa trên khảo sát ảnh thật</b>
-        <span>Không phải 9 nhóm đoán từ nghiên cứu tham chiếu. Khảo sát trực tiếp 6 trang thật (trải đều 4 file) chỉ thấy: (a) <code>surface_finish</code> — dấu ✓ độ nhám bề mặt, dạng chung hoặc cục bộ, có/không kèm giá trị Ra; (b) <code>gdt_datum</code> — khung GD&T (⊥, //...) + tam giác chuẩn datum đi kèm, chỉ ở chi tiết phức tạp. Không thấy ký hiệu hàn/xử lý nhiệt/ren trong mẫu khảo sát. Đã đưa vào <code>config/vision/symbol_label_config.xml</code>.</span></li>
+        <span>Không phải 9 nhóm đoán từ nghiên cứu tham chiếu. Khảo sát trực tiếp 6 trang thật (trải đều 4 file) chỉ thấy: (a) <code>surface_finish</code> — dấu ✓ độ nhám bề mặt, dạng chung hoặc cục bộ, có/không kèm giá trị Ra; (b) <code>gdt_datum</code> — khung GD&T (⊥, //...) + tam giác chuẩn datum đi kèm, chỉ ở chi tiết phức tạp. Không thấy ký hiệu hàn/xử lý nhiệt/ren trong mẫu khảo sát. Đã đưa vào <code>config/vision/symbol_label_config.xml</code>.
+        <br><b>Cập nhật 2026/08/25:</b> thêm nhóm thứ 3 ngoài phạm vi khảo sát ban đầu — <code>projection_symbol</code> (ký hiệu góc chiếu trong khung tên), theo yêu cầu người dùng. Xử lý bằng so khớp mẫu ảnh (không phải RT-DETR) vì vị trí cố định trong khung tên Alpha Vina — xem mục 4.6. RT-DETR cho nhóm này (khi có mẫu khung tên khách hàng khác) vẫn giữ trong kế hoạch, ghi CHƯA LÀM ở mục 4.6.</span></li>
       <li><b>2. Bắt đầu nhánh A ngay — CHỐT: đúng, đã làm</b>
         <span>Nhánh B (OCR trang scan/SHX) hoãn vô thời hạn, giữ nguyên khuyến nghị ban đầu.</span></li>
       <li><b>3. Ai gán nhãn 300–500 trang? — CHỐT: người dùng tự gán nhãn</b>
@@ -147,6 +151,18 @@
       <li><span class="branch b">Nhánh B</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Chạy lại probe_pdf.py xác nhận phân loại đúng</b></div></li>
       <li><span class="branch b">Nhánh B</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Render 300 DPI → detector → OCR, đo precision/recall so với đọc tay</b></div></li>
       <li><span class="branch b">Nhánh B</span><span class="tag todo">Chưa làm</span><div class="txt"><b>Tích hợp vào pipeline chính</b><span class="note">Provenance nguồn=OCR đánh dấu rõ, không trộn lẫn với PDF text</span></div></li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><h2>4.6 — Ký hiệu góc chiếu (PROJ-001/002, mẫu Alpha Vina)</h2><span class="pct">✓ Xong cho mẫu Alpha Vina — RT-DETR cho mẫu khác CHƯA LÀM</span></div>
+    <ul class="tasks">
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Đo vị trí ký hiệu trong khung tên Alpha Vina</b><span class="note">kiểm chứng trên 4 trang thật (2 A3 + 2 A4): CÙNG 1 toạ độ tuyệt đối tính từ cạnh phải/dưới trang cho cả 2 khổ giấy, không cần hiệu chỉnh riêng</span></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>So khớp mẫu ảnh (template matching), KHÔNG dùng RT-DETR</b><span class="note">src/drawing_check/vision/projection_symbol.py + config/vision/templates/projection_first_angle_alpha_vina.png — không cần gán nhãn/train GPU vì vị trí cố định, khác cách làm surface_finish/gdt_datum</span></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>Hiệu chỉnh ngưỡng IoU trên toàn bộ 51 trang MH612 + kiểm chứng thêm trên 79 trang M2618/VPK25</b><span class="note">0 báo sai cả 2 lô — 51 WARN "thiếu ký hiệu" trước đây (không đọc được từ text) nay biến mất đúng như kỳ vọng vì tất cả đều có ký hiệu hợp lệ</span></div></li>
+      <li><span class="tag" style="color:#2f7a4f;background:#e7f3ec">Xong</span><div class="txt"><b>4 test tự động (tests/unit/test_projection_symbol.py)</b><span class="note">dùng ảnh giả lập, không cần GPU/PDF thật — riêng biệt với luồng --vision đầy đủ (RT-DETR)</span></div></li>
+      <li><span class="tag hold">CHƯA LÀM — không phải bỏ</span><div class="txt"><b>RT-DETR cho ký hiệu góc chiếu ở mẫu khung tên KHÁC Alpha Vina</b><span class="note">so khớp mẫu ảnh chỉ dùng được khi vị trí ký hiệu cố định theo 1 mẫu đã biết — mẫu khung tên khách hàng khác (Phase 2) sẽ cần detector tổng quát hơn như surface_finish/gdt_datum, đợi có dữ liệu thật của mẫu đó mới làm, KHÔNG suy diễn trước</span></div></li>
+      <li><span class="tag todo">Chưa làm</span><div class="txt"><b>PROJ-002 (sai chuẩn góc chiếu) chưa có ví dụ thật để đối chiếu hình dạng ký hiệu góc chiếu thứ ba</b><span class="note">hiện xử lý theo hướng thận trọng: "có mực nhưng không khớp mẫu đã biết" → WARN cần người xem lại, không khẳng định chắc chắn là góc chiếu thứ ba</span></div></li>
     </ul>
   </div>
 

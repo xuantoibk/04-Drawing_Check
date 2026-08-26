@@ -15,7 +15,8 @@ from drawing_check.core.finding import Finding
 from drawing_check.core.model import GDTFrame, PageDoc, Provenance, SurfaceFinish
 from drawing_check.engine.loader import Rule
 from drawing_check.engine.runner import chay_rule_tren_trang, chay_rule_tren_trang_kich_thuoc
-from drawing_check.extract.dimension import trich_kich_thuoc
+from drawing_check.extract.dimension import trich_kich_thuoc, trich_nhan_pcd
+from drawing_check.extract.dimension_chain import trich_kich_thuoc_thuong_va_duong
 from drawing_check.extract.pdf_page import render_trang_thanh_anh, tinh_hash_file
 from drawing_check.extract.titleblock import (
     phan_loai_trang_don_gian,
@@ -35,6 +36,15 @@ def _chuyen_bbox_pixel_sang_pdf_point(
     scale = dpi / 72.0
     x0, y0, x1, y1 = bbox_px
     return (x0 / scale, chieu_cao_pt - (y1 / scale), x1 / scale, chieu_cao_pt - (y0 / scale))
+
+
+def _trich_goc_chieu_vision(page, page_no: int):
+    """So khop mau anh ky hieu goc chieu - xem drawing_check.vision.projection_symbol. Import O
+    TRONG ham (khong o dau file) de nhat quan voi _trich_ky_hieu_vision, tuy module nay khong can
+    torch/transformers (chi numpy/PIL) nhung van CHI can thiet khi bat --vision."""
+    from drawing_check.vision.projection_symbol import nhan_dien_goc_chieu
+
+    return nhan_dien_goc_chieu(page, page_no=page_no)
 
 
 def _trich_ky_hieu_vision(page, page_no: int) -> tuple[list[SurfaceFinish], list[GDTFrame]]:
@@ -91,6 +101,7 @@ def chay_1_file(
     danh_sach_du_an: list[dict],
     catalogs: dict,
     chay_vision: bool = False,
+    chay_dimension_chain: bool = True,
 ) -> tuple[list[PageDoc], list[Finding]]:
     """Trich khung ten (mau Alpha Vina, tu dong sang che do do long neu mau chinh khong doc duoc
     ma ban ve) + chay rule tren toan bo trang cua 1 file PDF.
@@ -102,15 +113,22 @@ def chay_1_file(
     trang - can GPU/torch/transformers va model da train (models/rtdetr_symbols_v1/best/), cham
     hon nhieu so voi chi doc text (Phase 1-3). De TAT theo mac dinh de khong lam gay cac luot
     chay/test hien co (vd golden test) von khong can GPU.
+
+    chay_dimension_chain: MAC DINH BAT (nguoi dung xac nhan 2026-08-25 - "thuong ngay se check
+    luon"). Bat DIM-007 (chuoi kich thuoc khep kin, xem extract/dimension_chain.py) - can doc du
+    lieu HINH HOC (duong ke) qua pdfplumber cho MOI trang (khong chi trang xoay nhu truoc), cham
+    hon ~40 lan so voi chi dung pypdfium2. Tat qua CLI (--no-dimension-chain) neu can toc do.
     """
     ma_file = tinh_hash_file(duong_dan)
     doc = pdfium.PdfDocument(str(duong_dan))
     n_pages = len(doc)
 
-    # pdfplumber chi can mo khi CO trang bi xoay (cham hon pypdfium2 ~40 lan) - file khong xoay
-    # trang nao (vd MH612) khong ton them chi phi, giu nguyen toc do da kiem chung.
+    # pdfplumber mo khi CO trang bi xoay HOAC dang bat DIM-007 (can du lieu hinh hoc moi trang) -
+    # file khong xoay trang nao VA tat --dimension-chain van giu duoc toc do nhanh cu (~40 lan).
     co_trang_xoay = any(doc[i].get_rotation() != 0 for i in range(n_pages))
-    doc_pdfplumber = pdfplumber.open(str(duong_dan)) if co_trang_xoay else None
+    doc_pdfplumber = (
+        pdfplumber.open(str(duong_dan)) if (co_trang_xoay or chay_dimension_chain) else None
+    )
 
     trang_list: list[PageDoc] = []
     findings: list[Finding] = []
@@ -121,7 +139,8 @@ def chay_1_file(
             khung_ten = trich_khung_ten_alpha_vina(
                 page, page_no=i + 1, trang_pdfplumber=trang_pdfplumber
             )
-            if khung_ten.drawing_no.value is None:
+            la_mau_alpha_vina = khung_ten.drawing_no.value is not None
+            if not la_mau_alpha_vina:
                 # Mau Alpha Vina khong doc duoc ca ma ban ve - co the la mau khung ten LA (cong
                 # ty/khach hang khac) hoac trang loi - chuyen sang do long theo tu khoa (WARN,
                 # khong bao gio FAIL, xem trich_khung_ten_do_long va NGUON_KHONG_CHAC_CHAN).
@@ -129,10 +148,25 @@ def chay_1_file(
                     page, page_no=i + 1, trang_pdfplumber=trang_pdfplumber
                 )
             dimensions = trich_kich_thuoc(page, page_no=i + 1, trang_pdfplumber=trang_pdfplumber)
+            pcd_labels = trich_nhan_pcd(page, page_no=i + 1, trang_pdfplumber=trang_pdfplumber)
+            if chay_dimension_chain and trang_pdfplumber is not None:
+                fit_code_bboxes = [d.prov.bbox for d in dimensions if d.fit_code and d.prov.bbox]
+                dimensions = dimensions + trich_kich_thuoc_thuong_va_duong(
+                    page_no=i + 1,
+                    trang_pdfplumber=trang_pdfplumber,
+                    fit_code_bboxes=fit_code_bboxes,
+                )
             surface_finishes: list[SurfaceFinish] = []
             gdt_frames: list[GDTFrame] = []
             if chay_vision:
                 surface_finishes, gdt_frames = _trich_ky_hieu_vision(page, page_no=i + 1)
+                if la_mau_alpha_vina:
+                    # So khop mau CHI dung cho mau Alpha Vina (vi tri crop tuyet doi da do dac
+                    # rieng cho mau nay - xem vision/projection_symbol.py). Trang mau khac giu
+                    # nguyen projection=None nhu truoc (khong doan bua).
+                    khung_ten = khung_ten.model_copy(
+                        update={"projection": _trich_goc_chieu_vision(page, page_no=i + 1)}
+                    )
             trang = PageDoc(
                 file_hash=ma_file,
                 file_name=duong_dan.name,
@@ -143,6 +177,7 @@ def chay_1_file(
                 rotation=page.get_rotation(),
                 title_block=khung_ten,
                 dimensions=dimensions,
+                pcd_labels=pcd_labels,
                 surface_finishes=surface_finishes,
                 gdt_frames=gdt_frames,
             )
@@ -153,6 +188,7 @@ def chay_1_file(
                 "project": du_an_khop or {},
                 "catalogs": catalogs,
                 "vision_enabled": chay_vision,
+                "dimension_chain_enabled": chay_dimension_chain,
             }
             findings.extend(chay_rule_tren_trang(trang, rules, context_trang))
             findings.extend(chay_rule_tren_trang_kich_thuoc(trang, rules, context_trang))

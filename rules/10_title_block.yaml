@@ -94,11 +94,12 @@ rules:
     confidence_gate: 0.5
     check: field_present
     params: { field: title_block.projection }
-    message_vi: "Ban ve khong ghi ky hieu goc chieu - nguy co gia cong lat guong."
+    message_vi: "Ban ve khong ghi ky hieu goc chieu (hoac khong nhan dien duoc) - nguy co gia cong lat guong."
     fix_hint: >
-      Ky hieu goc chieu la HINH VE (cone/circle), khong phai text - duong PDF text khong doc
-      duoc field nay (confidence luon thap, rule chi len muc WARN). Can nguoi kiem tra xac nhan
-      bang mat, hoac cho toi Phase 4 (nhan dang hinh anh) moi tu dong hoa duoc.
+      Ky hieu goc chieu la HINH VE (cone/circle), khong phai text - duong PDF text khong doc duoc
+      field nay. Khi chay voi --vision va la mau khung ten Alpha Vina, co so khop mau anh (xem
+      vision/projection_symbol.py) - neu van bao thieu du la vung dung dang trong that hoac trang
+      dung mau khung ten khac (chua ho tro). Luon can nguoi kiem tra xac nhan bang mat (chi WARN).
 
   - id: PROJ-002
     name: "Goc chieu sai chuan du an"
@@ -108,4 +109,6 @@ rules:
     params:
       field: title_block.projection
       project_key: projection_angle
-    message_vi: "Ban ve ghi goc chieu '{value}' nhung du an nay dung chuan khac."
+    message_vi: >-
+      Vung ky hieu goc chieu KHONG khop mau '{value}' da xac nhan cho du an nay - can nguoi kiem
+      tra xac nhan bang mat (co the la goc chieu khac, hoac vision nhan dien nham).

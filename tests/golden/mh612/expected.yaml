@@ -6,10 +6,13 @@
 file: "MH612-DATA GIA CONG FULL.pdf"
 so_trang: 51
 
-# Tong so finding theo muc do, cong don tren ca 51 trang.
+# Tong so finding theo muc do, cong don tren ca 51 trang. Cap nhat 2026-08-25: +2 WARN DIM-002
+# (P.C.D thieu ky hieu duong kinh, nguoi dung phat hien - xem docs/Source/Project-Remember.md muc
+# DIM-002) - trang 1 "P.C.D.44" va trang 6 "P.C.D.42" la LOI THAT tren ban ve goc, khong phai loi
+# cong cu (cac trang khac deu ghi dung "P.C.Dφ..").
 tong_ket:
   FAIL: 1
-  WARN: 51
+  WARN: 53
   INFO: 0
 
 # Danh sach loi CU THE da biet truoc, phai luon con bi bat dung - neu extractor/rule engine
@@ -18,3 +21,9 @@ loi_biet_truoc:
   - trang: 21
     rule_id: TB-011
     drawing_no: MH612-M2004-A6-AW-P
+  - trang: 1
+    rule_id: DIM-002
+    drawing_no: MH612-M1001-A6-AW-P
+  - trang: 6
+    rule_id: DIM-002
+    drawing_no: MH612-M1006-A6-AW-P

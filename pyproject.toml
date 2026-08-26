@@ -23,6 +23,8 @@ vision = [
     "scipy",
     "paddlepaddle-gpu",
     "paddleocr",
+    "numpy",
+    "pillow",
 ]
 
 [project.scripts]

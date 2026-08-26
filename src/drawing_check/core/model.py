@@ -62,6 +62,17 @@ class Dimension(BaseModel):
     is_reference: bool = False
     is_basic: bool = False
     prov: Provenance
+    # 3 truong duoi day CHI duoc dien khi ghep duoc voi 1 duong kich thuoc hinh hoc that (DIM-007,
+    # xem extract/dimension_chain.py) - None nghia la khong ghep duoc/khong ap dung (vd fit-code).
+    axis: Optional[Literal["horizontal", "vertical"]] = None
+    line_span: Optional[tuple[float, float]] = None  # 2 dau mut doc truc chinh (pt, goc duoi-trai)
+    line_cross: Optional[float] = None  # toa do truc con lai (vd y cho duong ngang)
+    # cum hinh hoc (HINH CHIEU) ma duong kich thuoc nay thuoc ve - cac duong noi lien nhau (duong
+    # bao chi tiet + duong giong + duong kich thuoc) duoc gom chung 1 id qua union-find (xem
+    # extract/dimension_chain.py::_gom_cum_hinh_hoc). Dung de KHONG ghep nham kich thuoc bao cua
+    # HINH CHIEU nay voi chuoi kich thuoc cua HINH CHIEU khac (loi that phat hien 2026-08-25,
+    # trang 28 MH612 - xem docs/Source/Project-Remember.md muc DIM-007).
+    view_id: Optional[int] = None
 
 
 class GDTFrame(BaseModel):
@@ -123,6 +134,11 @@ class PageDoc(BaseModel):
     welds: list[WeldSymbol] = []
     threads: list[Thread] = []
     notes: list[Note] = []
+    # Nhan "P.C.D" (duong tron chia lo bulong) tim duoc tren trang - phuc vu DIM-002 (thieu ky
+    # hieu duong kinh phi, xem extract/dimension.py::trich_nhan_pcd). raw_text la chuoi khop
+    # duoc (vd "P.C.D.44" hoac "P.C.Dφ38") - rule tu kiem tra co ky hieu phi hay khong qua regex,
+    # KHONG phan xu o buoc trich xuat (dung nguyen tac kien truc "extractor khong phan xu").
+    pcd_labels: list[Note] = []
 
 
 class DrawingDoc(BaseModel):

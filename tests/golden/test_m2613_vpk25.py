@@ -60,7 +60,13 @@ def ket_qua_theo_file(ky_vong):
 
     ket_qua: dict[str, tuple[list, list]] = {}
     for duong_dan in _cac_file_pdf(ky_vong):
-        ket_qua[duong_dan.name] = chay_1_file(duong_dan, rules, project, context_catalogs)
+        # chay_dimension_chain=False: golden set nay dong bang baseline DA duoc nguoi dung xac
+        # nhan thu cong truoc khi co DIM-007 (2026-08-25) - DIM-007 chua qua review, khong duoc
+        # tu dong lam vao phep so khop expected.yaml (dimension_chain mac dinh BAT o CLI/chay
+        # thuong ngay, nhung KHONG bat o day). Xem tests/golden/test_mh612.py ghi chu tuong tu.
+        ket_qua[duong_dan.name] = chay_1_file(
+            duong_dan, rules, project, context_catalogs, chay_dimension_chain=False
+        )
     return ket_qua
 
 

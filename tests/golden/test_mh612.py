@@ -48,7 +48,13 @@ def ket_qua():
     danh_sach_du_an = [project]
     catalogs = {"materials": vat_lieu["materials"], "iso286": iso286}
     rules = doc_thu_muc_rule(THU_MUC_GOC / "rules")
-    trang_list, findings = chay_1_file(FILE_PDF, rules, danh_sach_du_an, catalogs)
+    # chay_dimension_chain=False: dong bang baseline DA duoc nguoi dung xac nhan thu cong truoc
+    # khi co DIM-007 (2026-08-25, doc duong hinh hoc qua pdfplumber) - DIM-007 chua qua review,
+    # khong duoc tu dong lam vao phep so khop expected.yaml (dimension_chain mac dinh BAT o
+    # CLI/chay thuong ngay, nhung KHONG bat o day).
+    trang_list, findings = chay_1_file(
+        FILE_PDF, rules, danh_sach_du_an, catalogs, chay_dimension_chain=False
+    )
     for ban_ve in gom_trang_thanh_ban_ve(trang_list):
         context_ban_ve = {"project": tim_du_an_khop(ban_ve.drawing_no, danh_sach_du_an) or {}}
         findings.extend(chay_rule_tren_ban_ve(ban_ve, rules, context_ban_ve))

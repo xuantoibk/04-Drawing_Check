@@ -42,6 +42,12 @@ def run(
         help="Bat detector RT-DETR (Phase 4, symbol WARN) - can GPU/torch/transformers + model "
         "da train (models/rtdetr_symbols_v1/best/), cham hon nhieu. Mac dinh TAT.",
     ),
+    dimension_chain: bool = typer.Option(
+        True,
+        "--dimension-chain/--no-dimension-chain",
+        help="Bat DIM-007 (chuoi kich thuoc cong don khep kin) - can doc du lieu hinh hoc qua "
+        "pdfplumber cho MOI trang, cham hon ~40 lan so voi chi doc text. Mac dinh BAT.",
+    ),
 ) -> None:
     """Chay kiem tra tren cac file PDF khop PATTERN (vd "D:\\BanVe\\*.pdf").
 
@@ -79,7 +85,12 @@ def run(
     for duong_dan_str in duong_dan_khop:
         duong_dan = Path(duong_dan_str)
         trang_1_file, findings_1_file = chay_1_file(
-            duong_dan, rules, danh_sach_du_an, catalogs, chay_vision=vision
+            duong_dan,
+            rules,
+            danh_sach_du_an,
+            catalogs,
+            chay_vision=vision,
+            chay_dimension_chain=dimension_chain,
         )
         trang_list.extend(trang_1_file)
         findings.extend(findings_1_file)

@@ -123,10 +123,24 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
 
 ## Phase 4 (Vision) — quyết định còn hiệu lực (2026-08-25)
 
-- **Chỉ 2 nhóm ký hiệu cần Vision bắt: `surface_finish` và `gdt_datum`** — KHÔNG phải "9 nhóm"
-  nêu trong kế hoạch gốc (con số đó chỉ là suy đoán theo 1 nghiên cứu tham chiếu ngoài, không
-  phải quyết định cho công ty này). Chốt bằng khảo sát trực tiếp ảnh thật, không phải suy diễn.
-  Cấu hình nhãn tại `config/vision/symbol_label_config.xml`.
+- **2 nhóm ký hiệu dùng RT-DETR: `surface_finish` và `gdt_datum`** — KHÔNG phải "9 nhóm" nêu
+  trong kế hoạch gốc (con số đó chỉ là suy đoán theo 1 nghiên cứu tham chiếu ngoài, không phải
+  quyết định cho công ty này). Chốt bằng khảo sát trực tiếp ảnh thật, không phải suy diễn. Cấu
+  hình nhãn tại `config/vision/symbol_label_config.xml`.
+- **(2026-08-25) Thêm nhóm ký hiệu thứ 3 — ký hiệu góc chiếu (PROJ-001/002) — nhưng dùng SO KHỚP
+  MẪU ẢNH, không dùng RT-DETR.** Lý do: vị trí ký hiệu này CỐ ĐỊNH TUYỆT ĐỐI trong khung tên (đo
+  trên 4 trang thật, cả A3/A4: cùng 1 toạ độ tính từ cạnh phải/dưới trang), khác surface_finish/
+  gdt_datum (trôi nổi khắp trang, cần detector tổng quát). Code:
+  `src/drawing_check/vision/projection_symbol.py` + ảnh mẫu
+  `config/vision/templates/projection_first_angle_alpha_vina.png`. Đã kiểm chứng 0 báo sai trên cả
+  51 trang MH612 và 79 trang M2618/VPK25 (chạy `--vision`) — 51+79 WARN "thiếu ký hiệu" trước đây
+  (không đọc được từ PDF text) nay biến mất đúng như kỳ vọng. **CHỈ áp dụng cho mẫu khung tên Alpha
+  Vina** (gate qua `la_mau_alpha_vina` trong `pipeline.py` — không chạy ở chế độ "dò lỏng"). RT-DETR
+  cho ký hiệu góc chiếu ở mẫu khung tên KHÁC (khách hàng khác, Phase 2) **CHƯA LÀM, không phải
+  phương án bị bỏ** — người dùng xác nhận giữ nguyên trong kế hoạch, chỉ chưa có dữ liệu thật của
+  mẫu khác để làm. PROJ-002 (sai chuẩn) chưa có ví dụ thật về ký hiệu SAI để đối chiếu hình dạng
+  chính xác — hiện xử lý thận trọng: "có mực nhưng không khớp mẫu đã biết" → gán value="third" như
+  1 TÍN HIỆU (không phải khẳng định chắc chắn), rule chỉ WARN, cần người xem lại.
 - **RT-DETR fine-tune trên dữ liệu ít (~200 ảnh) PHẢI đánh giá bằng cách quét NHIỀU ngưỡng tin
   cậy (vd 0.03-0.3), KHÔNG dùng ngưỡng mặc định 0.5** — model DETR-family có thang đo confidence
   rất thấp trong chế độ này ngay cả khi đã học tốt (IoU định vị có thể đạt 0.94-0.99 trong khi

@@ -21,3 +21,31 @@ rules:
     params: {}
     message_vi: "Ma lap ghep '{gia_tri}' khong dung cu phap ISO 286/JIS B 0401."
     fix_hint: "Kiem tra lai chu cai lech chuan va cap chinh xac (vd H7, g6) theo dung bang ISO 286."
+
+  - id: DIM-002
+    name: "P.C.D thieu ky hieu duong kinh"
+    severity: minor
+    check: pcd_thieu_ky_hieu_duong_kinh
+    # confidence_gate=0.95 > do_tin_cay=0.9 cua nhan PCD moi trich (xem extract/dimension.py) -
+    # CO Y tam chi len WARN, moi kiem chung tren 1 file that (2026-08-25, nguoi dung phat hien).
+    confidence_gate: 0.95
+    params: {}
+    message_vi: "Nhan '{gia_tri}' (P.C.D - duong tron chia lo bulong) thieu ky hieu duong kinh (chu phi) truoc con so."
+    fix_hint: "P.C.D la mo ta 1 DUONG TRON nen phai co ky hieu duong kinh (chu phi) truoc con so, vd 'P.C.D phi38' thay vi 'P.C.D.38'."
+
+  - id: DIM-007
+    name: "Chuoi kich thuoc cong don khep kin"
+    severity: major
+    # Nang luc moi (2026-08-25, doc duong hinh hoc qua pdfplumber) - nhieu tang suy doan (doc
+    # text + khop duong + nhom chuoi) hon fit-code, dat gate CAO de CHI len WARN cho toi khi kiem
+    # chung du tren du lieu that (xem docs/Source/Project-Remember.md muc DIM-007).
+    confidence_gate: 0.95
+    check: chuoi_kich_thuoc_khep_kin
+    params: {}
+    message_vi: >-
+      Chuoi kich thuoc {gia_tri} khep kin - khong co kich thuoc nao trong chuoi duoc danh dau tham
+      khao (ngoac don), co the gay mau thuan dung sai giua chuoi va kich thuoc bao.
+    fix_hint: >
+      Kiem tra lai bang mat: neu day dung la 1 chuoi khep vong (tong cac doan = kich thuoc bao),
+      can danh dau 1 kich thuoc trong chuoi la THAM KHAO (ngoac don, khong dung de kiem tra) de mo
+      chuoi. Day la ket qua tu doc hinh hoc PDF (khong phai FAIL), can nguoi xac nhan lai.

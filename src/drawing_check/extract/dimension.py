@@ -24,11 +24,12 @@ kich thuoc/dung sai (khong co khai niem "hang/o" nhu khung ten).
 from __future__ import annotations
 
 import re
+from typing import Callable
 
 import pdfplumber
 import pypdfium2 as pdfium
 
-from drawing_check.core.model import Dimension, Provenance
+from drawing_check.core.model import Dimension, Note, Provenance
 from drawing_check.extract.pdf_page import lay_ky_tu_trong_vung, lay_ky_tu_trong_vung_pdfplumber
 
 # Bang chu cai lech chuan ISO 286/JIS B 0401 CHAP NHAN cho rule nay - co Y LOAI TRU "x"/"X" (chu
@@ -65,23 +66,79 @@ def _trong_vung_chu_giai(c: tuple[float, float, float, float, str], h: float) ->
 _NGUONG_KHOANG_CACH = 3.0  # pt - cung nguong voi gom_tu_trong_dong (pdf_page.py)
 
 
-def _tim_fit_code_trong_ky_tu(
-    chars: list[tuple[float, float, float, float, str]], page_no: int
-) -> list[Dimension]:
-    """QUAN TRONG: khong chi gop ky tu theo LOAI (chu/so) ma con phai gop theo KHOANG CACH VI
-    TRI - da phat hien tren du lieu that (2026-08-24): trong luong ky tu tho cua PDF, 2 nhan khac
-    nhau tren trang (vd fit-code "36G6" va 1 gia tri GD&T "0.05 A" o ke ben) co the noi lien nhau
-    KHONG co ky tu ngan cach nao (khong dau cach/dau phay) vi chung nam o 2 VI TRI vat ly khac
-    nhau, chi la lien tuc trong LUONG du lieu. Neu chi gop theo loai ky tu se dinh nham thanh 1
-    chuoi dai ("36G6A0.05A2"), lam regex khong con khop dung bien (h7/g6 bi dinh voi ky tu sau).
-    Phai ngat buffer moi khi khoang cach vi tri (x hoac y) giua 2 ky tu lien tiep vuot nguong,
-    giong dung nguyen tac gom_tu_trong_dong (pdf_page.py) nhung ap dung tren CA TRANG trong 1
-    lan quet thang, khong qua gom_dong (xem ly do o docstring dau file)."""
-    ket_qua: list[Dimension] = []
+def quet_buffer_theo_vi_tri(
+    chars: list[tuple[float, float, float, float, str]],
+    khop_loai: Callable[[str], bool],
+    nguong_khoang_cach: float = _NGUONG_KHOANG_CACH,
+) -> list[tuple[str, list[tuple[float, float, float, float, str]]]]:
+    """Gom ky tu lien tiep (thoa khop_loai) thanh cac buffer theo VI TRI THUC TE (dong ngang hoac
+    cot doc), KHONG chi theo loai ky tu - tach tu _tim_fit_code_trong_ky_tu (dung chung cho ca fit
+    code va so kich thuoc thuong trong dimension_chain.py, 2026-08-25).
+
+    QUAN TRONG: khong chi gop ky tu theo LOAI (chu/so) ma con phai gop theo KHOANG CACH VI TRI -
+    da phat hien tren du lieu that (2026-08-24): trong luong ky tu tho cua PDF, 2 nhan khac nhau
+    tren trang (vd fit-code "36G6" va 1 gia tri GD&T "0.05 A" o ke ben) co the noi lien nhau KHONG
+    co ky tu ngan cach nao (khong dau cach/dau phay) vi chung nam o 2 VI TRI vat ly khac nhau, chi
+    la lien tuc trong LUONG du lieu. Neu chi gop theo loai ky tu se dinh nham thanh 1 chuoi dai
+    ("36G6A0.05A2"), lam regex khong con khop dung bien (h7/g6 bi dinh voi ky tu sau). Phai ngat
+    buffer moi khi khoang cach vi tri (x hoac y) giua 2 ky tu lien tiep vuot nguong, giong dung
+    nguyen tac gom_tu_trong_dong (pdf_page.py) nhung ap dung tren CA TRANG trong 1 lan quet thang,
+    khong qua gom_dong (xem ly do o docstring dau file).
+
+    nguong_khoang_cach: mac dinh dung nguong fit-code (3.0pt) - CO THE noi rong hon cho nhan chu
+    co khoang cach lon hon (vd "P.C.D" co khoang trong ~6pt giua chu va dau cham, phat hien
+    2026-08-25 khi trich PCD-001 - xem extract/dimension.py::trich_nhan_pcd)."""
+    ket_qua: list[tuple[str, list[tuple[float, float, float, float, str]]]] = []
     buf = ""
     buf_chars: list[tuple[float, float, float, float, str]] = []
 
-    def xu_ly_buf() -> None:
+    def dong_buf() -> None:
+        if buf:
+            ket_qua.append((buf, buf_chars))
+
+    for c in chars:
+        ch = c[4]
+        hop_le = khop_loai(ch)
+        lien_tuc_vi_tri = False
+        if hop_le and buf_chars:
+            truoc = buf_chars[-1]
+            khoang_x = c[0] - truoc[2]  # left cua c - right cua ky tu truoc (khoang cach ngang)
+            lech_y_ngang = abs(c[1] - truoc[1])  # lech bottom - dung cho dong NGANG
+            lech_x_doc = abs(c[0] - truoc[0])  # lech left - dung cho cot DOC
+            khoang_y_doc = c[1] - truoc[3]  # bottom cua c - top cua ky tu truoc (khoang cach doc)
+            cao_ky_tu_truoc = truoc[3] - truoc[1]
+            # Dong NGANG (doc trai->phai binh thuong): x gan nhau, cung do cao bottom.
+            la_dong_ngang = khoang_x <= nguong_khoang_cach and lech_y_ngang <= nguong_khoang_cach
+            # Cot DOC (viet tung ky tu chong len nhau tu tren xuong - da kiem chung that tren
+            # MH612 trang 1, chu "φ36G6" xep doc, khoang cach giua 2 ky tu ~1-1.5 lan chieu cao
+            # ky tu, KHONG phai gan 0 nhu doc ngang - phai xu ly rieng, khong the dung 1 nguong):
+            # Cho phep khoang_y_doc am nhe (ky tu chong len nhau chut it, da gap that tren file
+            # PHAY - font render 2 ky tu lien tiep khi xep doc co the cham/de len nhau vai chuc
+            # diem thap phan, khong phai khoang trong that).
+            la_cot_doc = (
+                lech_x_doc <= nguong_khoang_cach
+                and -nguong_khoang_cach <= khoang_y_doc <= 1.5 * max(cao_ky_tu_truoc, 1.0)
+            )
+            lien_tuc_vi_tri = la_dong_ngang or la_cot_doc
+
+        if hop_le and (not buf_chars or lien_tuc_vi_tri):
+            buf += ch
+            buf_chars.append(c)
+        else:
+            dong_buf()
+            if hop_le:
+                buf, buf_chars = ch, [c]
+            else:
+                buf, buf_chars = "", []
+    dong_buf()
+    return ket_qua
+
+
+def _tim_fit_code_trong_ky_tu(
+    chars: list[tuple[float, float, float, float, str]], page_no: int
+) -> list[Dimension]:
+    ket_qua: list[Dimension] = []
+    for buf, buf_chars in quet_buffer_theo_vi_tri(chars, lambda ch: bool(_KY_TU_TICH_LUY.match(ch))):
         for m in RE_FIT_CODE.finditer(buf):
             cac_ky_tu_khop = buf_chars[m.start() : m.end()]
             bbox = (
@@ -105,42 +162,6 @@ def _tim_fit_code_trong_ky_tu(
                     prov=Provenance(source="pdf_text", confidence=0.8, page=page_no, bbox=bbox),
                 )
             )
-
-    for c in chars:
-        ch = c[4]
-        khop_loai = bool(_KY_TU_TICH_LUY.match(ch))
-        lien_tuc_vi_tri = False
-        if khop_loai and buf_chars:
-            truoc = buf_chars[-1]
-            khoang_x = c[0] - truoc[2]  # left cua c - right cua ky tu truoc (khoang cach ngang)
-            lech_y_ngang = abs(c[1] - truoc[1])  # lech bottom - dung cho dong NGANG
-            lech_x_doc = abs(c[0] - truoc[0])  # lech left - dung cho cot DOC
-            khoang_y_doc = c[1] - truoc[3]  # bottom cua c - top cua ky tu truoc (khoang cach doc)
-            cao_ky_tu_truoc = truoc[3] - truoc[1]
-            # Dong NGANG (doc trai->phai binh thuong): x gan nhau, cung do cao bottom.
-            la_dong_ngang = khoang_x <= _NGUONG_KHOANG_CACH and lech_y_ngang <= _NGUONG_KHOANG_CACH
-            # Cot DOC (viet tung ky tu chong len nhau tu tren xuong - da kiem chung that tren
-            # MH612 trang 1, chu "φ36G6" xep doc, khoang cach giua 2 ky tu ~1-1.5 lan chieu cao
-            # ky tu, KHONG phai gan 0 nhu doc ngang - phai xu ly rieng, khong the dung 1 nguong):
-            # Cho phep khoang_y_doc am nhe (ky tu chong len nhau chut it, da gap that tren file
-            # PHAY - font render 2 ky tu lien tiep khi xep doc co the cham/de len nhau vai chuc
-            # diem thap phan, khong phai khoang trong that).
-            la_cot_doc = (
-                lech_x_doc <= _NGUONG_KHOANG_CACH
-                and -_NGUONG_KHOANG_CACH <= khoang_y_doc <= 1.5 * max(cao_ky_tu_truoc, 1.0)
-            )
-            lien_tuc_vi_tri = la_dong_ngang or la_cot_doc
-
-        if khop_loai and (not buf_chars or lien_tuc_vi_tri):
-            buf += ch
-            buf_chars.append(c)
-        else:
-            xu_ly_buf()
-            if khop_loai:
-                buf, buf_chars = ch, [c]
-            else:
-                buf, buf_chars = "", []
-    xu_ly_buf()
     return ket_qua
 
 
@@ -160,3 +181,60 @@ def trich_kich_thuoc(
 
     chars = [c for c in chars if not _trong_vung_chu_giai(c, h)]
     return _tim_fit_code_trong_ky_tu(chars, page_no)
+
+
+# Nhan "P.C.D" (Pitch Circle Diameter - duong tron chia lo bulong) PHAI kem ky hieu duong kinh
+# (phi/⌀) truoc con so, vd "P.C.Dφ38" - neu thieu (vd "P.C.D.44") la sai quy uoc ghi kich thuoc
+# duong tron (DIM-002, nguoi dung phat hien 2026-08-25, xem docs/Source/Project-Remember.md).
+# QUAN TRONG: khoang cach ky tu trong nhan nay RONG HON fit-code (~6pt giua chu va dau cham, da do
+# tren du lieu that trang 1 MH612) - PHAI dung nguong rieng, nguong fit-code (3pt) se lam ky tu
+# tach roi khong gom duoc thanh 1 buffer.
+_KY_TU_PCD = re.compile(r"[PCDpcd.0-9φΦ⌀]")
+RE_PCD = re.compile(r"P\.?C\.?D\.?([φΦ⌀])?(\d+(?:\.\d+)?)", re.IGNORECASE)
+_NGUONG_KHOANG_CACH_PCD = 8.0
+
+
+def _tim_pcd_trong_ky_tu(
+    chars: list[tuple[float, float, float, float, str]], page_no: int
+) -> list[Note]:
+    ket_qua: list[Note] = []
+    for buf, buf_chars in quet_buffer_theo_vi_tri(
+        chars, lambda ch: bool(_KY_TU_PCD.match(ch)), nguong_khoang_cach=_NGUONG_KHOANG_CACH_PCD
+    ):
+        for m in RE_PCD.finditer(buf):
+            cac_ky_tu_khop = buf_chars[m.start() : m.end()]
+            bbox = (
+                min(c[0] for c in cac_ky_tu_khop),
+                min(c[1] for c in cac_ky_tu_khop),
+                max(c[2] for c in cac_ky_tu_khop),
+                max(c[3] for c in cac_ky_tu_khop),
+            )
+            ket_qua.append(
+                Note(
+                    raw_text=m.group(0),
+                    # confidence=0.9: mau text don gian (khong lien quan bay xao tron thu tu da
+                    # gap voi fit-code+dung sai), nhung moi kiem chung tren 1 file - tam giu duoi
+                    # 1.0. Rule DIM-002 dat confidence_gate de tam thoi CHI len WARN.
+                    prov=Provenance(source="pdf_text", confidence=0.9, page=page_no, bbox=bbox),
+                )
+            )
+    return ket_qua
+
+
+def trich_nhan_pcd(
+    page: pdfium.PdfPage,
+    page_no: int,
+    trang_pdfplumber: pdfplumber.page.Page | None = None,
+) -> list[Note]:
+    """Quet CA TRANG tim nhan P.C.D - CHI tra ve nhan tim duoc (co hoac KHONG co ky hieu duong
+    kinh), khong tu ket luan vi pham (dung nguyen tac "extractor khong phan xu" - xem rule DIM-002
+    trong engine/primitives_dimension.py). trang_pdfplumber chi can khi page bi xoay, cung dieu
+    kien voi trich_kich_thuoc."""
+    w, h = page.get_size()
+    if page.get_rotation() != 0 and trang_pdfplumber is not None:
+        chars = lay_ky_tu_trong_vung_pdfplumber(trang_pdfplumber, 0, h, w, 0)
+    else:
+        chars = lay_ky_tu_trong_vung(page, 0, h, w, 0)
+
+    chars = [c for c in chars if not _trong_vung_chu_giai(c, h)]
+    return _tim_pcd_trong_ky_tu(chars, page_no)

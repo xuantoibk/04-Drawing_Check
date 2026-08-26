@@ -9,13 +9,17 @@ CHUA co rule nao trong rules/*.yaml can doc gia tri chu ben trong vung (SYM-001 
 biet CO/KHONG co ky hieu, khong can doc chu) - module nay la tien ich san sang dung khi co rule
 can, chua duoc goi tu pipeline.py.
 
-GIOI HAN MOI TRUONG DA BIET (2026-08-25): `paddleocr` 3.7.0 (moi nhat tren PyPI) can API
-PaddlePaddle moi hon (vd AnalysisConfig.set_optimization_level) so voi `paddlepaddle-gpu` 2.6.2 -
-DAY LA BAN MOI NHAT CO SAN qua pip cho Windows (kiem chung bang `pip index versions
-paddlepaddle-gpu` - khong co ban cao hon). Goi ocr_region() hien tai se loi AttributeError khi
-khoi tao PaddleOCR. Chua sua vi CHUA CO RULE NAO CAN OCR (chi la tien ich chuan bi san) - neu can
-dung that, huong sua: (1) cai paddlepaddle-gpu tu index rieng cua paddlepaddle.org.cn (ngoai
-PyPI, co ban moi hon cho Windows), hoac (2) ha cap paddleocr xuong ban tuong thich 2.6.2."""
+DA SUA (2026-08-26): tung bi chan boi `paddleocr` 3.7.0 can API PaddlePaddle moi hon ban
+`paddlepaddle-gpu` 2.6.2 (ban GPU cao nhat tren PyPI cho Windows luc do). Da thu nang cap len
+`paddlepaddle-gpu` 3.3.1 (cai tu index rieng cua paddlepaddle.org.cn, PyPI khong co ban GPU
+moi) nhung gap loi rieng cua Windows: `OSError WinError 127` khi khoi tao PaddleOCR (engine
+cudnn JIT). Chuyen huong dung ban **CPU-only `paddlepaddle` 3.3.1 co san thang tren PyPI**
+(khong can index ngoai) - vi tac vu o day chi doc 1 vung anh nho, khong can toc do GPU, va
+tach biet hoan toan voi GPU (torch) dang dung cho RT-DETR trong detector.py nen khong anh
+huong. Con gap tiep 1 loi CPU rieng: `enable_mkldnn` mac dinh True gay
+`ConvertPirAttribute2RuntimeAttribute not support` voi model PP-OCRv6 tren paddle 3.3.1 - da
+tat bang `enable_mkldnn=False` trong `_nap_ocr()`. Da kiem chung `ocr_region()` chay that, doc
+dung "Ra6.3"/"Ra25" tu vung anh that (conf 1.00)."""
 
 from __future__ import annotations
 
@@ -31,15 +35,22 @@ _ocr_cache: dict[str, object] = {}
 
 def _nap_ocr(lang: str):
     if lang not in _ocr_cache:
-        # paddlepaddle 2.6.2 bundle san .pb2 bien dich voi protobuf cu, xung dot voi protobuf
-        # moi (vd 7.x) cai kem transformers - loi "Descriptors cannot be created directly" khi
+        # paddlepaddle bundle san .pb2 bien dich voi protobuf cu, xung dot voi protobuf moi
+        # (vd 7.x) cai kem transformers - loi "Descriptors cannot be created directly" khi
         # import paddle. Fallback ve trinh doc protobuf thuan Python (cham hon chut, khong can
         # ha cap protobuf va pha transformers) - phai dat TRUOC lan import paddle dau tien.
         os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
         from paddleocr import PaddleOCR
 
+        # enable_mkldnn=False: mac dinh True gay loi "ConvertPirAttribute2RuntimeAttribute not
+        # support" khi chay CPU tren paddle 3.3.1 voi model PP-OCRv6 (bug tuong thich oneDNN,
+        # da kiem chung tat di la chay duoc, cham hon chut nhung on dinh).
         _ocr_cache[lang] = PaddleOCR(
-            lang=lang, use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False
+            lang=lang,
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            enable_mkldnn=False,
         )
     return _ocr_cache[lang]
 

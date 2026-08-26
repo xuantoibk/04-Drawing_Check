@@ -21,7 +21,7 @@ vision = [
     "torchvision",
     "transformers",
     "scipy",
-    "paddlepaddle-gpu",
+    "paddlepaddle==3.3.1",
     "paddleocr",
     "numpy",
     "pillow",

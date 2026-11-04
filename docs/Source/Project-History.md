@@ -134,7 +134,7 @@ Tiếp nối phiên trước (mở đầu Phase 3, dừng đúng lúc trước P
 - **Checkpoint tốt nhất = epoch 40 của lần train ĐẦU TIÊN**, không phải các lần train thêm sau — Vì sao: so sánh khách quan cho F1 cao nhất; train thêm gây overfit trên dữ liệu ít
 - **`--vision` mặc định TẮT** — không bắt buộc GPU cho luồng Phase 1-3/golden test hiện có
 - **Chỉ 2 nhóm ký hiệu, không phải 9** — bằng chứng thật, không suy đoán
-- **Cache AI dùng chung tại `G:\ThuvienAI`** — áp dụng mọi dự án trên máy
+- **Cache AI dùng chung tại `G:\ThuvienAI`** — áp dụng mọi dự án trên máy *(04/11/2026: đã đổi sang `D:\Claude\Library` — xem `Project-Remember.md`)*
 - **OCR tạm hoãn** — lỗi môi trường thật, chưa có rule cần
 
 ### Bước tiếp theo (ưu tiên phiên sau)

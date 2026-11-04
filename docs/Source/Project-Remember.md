@@ -160,8 +160,11 @@ này; xem `docs/Source/Project-History.md` để đọc tường thuật chi ti�
   KHÔNG được chỉ dựa vào `page.surface_finishes`/`page.gdt_frames` rỗng — rỗng có thể nghĩa là
   "Vision đã chạy và không thấy gì" HOẶC "Vision chưa chạy" (giá trị mặc định giống hệt nhau),
   gây WARN sai hàng loạt nếu không phân biệt. Xem `engine/primitives_symbols.py`.
-- **Cache thư viện AI (HuggingFace/pip/torch/Ollama) dùng CHUNG toàn máy tại `G:\ThuvienAI`**
-  (biến môi trường `HF_HOME`/`TORCH_HOME`/`PIP_CACHE_DIR`/`OLLAMA_MODELS`, đặt cấp User) — áp
+- **Cache thư viện AI (HuggingFace/pip/torch/Ollama) dùng CHUNG toàn máy tại `D:\Claude\Library`**
+  (đổi từ `G:\ThuvienAI` ngày 04/11/2026 theo yêu cầu người dùng — thư mục con `huggingface`,
+  `torch`, `pip-cache`, `ollama-models`, `paddlex`; biến môi trường `HF_HOME`/`TORCH_HOME`/
+  `PIP_CACHE_DIR`/`OLLAMA_MODELS`/`PADDLE_PDX_CACHE_HOME`, đặt cấp User — biến cuối thêm
+  04/11/2026 vì PaddleOCR mặc định tải model về `~/.paddlex` trên ổ C) — áp
   dụng cho MỌI dự án trên máy này, không riêng Drawing Check. Chỉ có hiệu lực với terminal mở SAU
   thời điểm đặt biến.
 - **OCR (`vision/ocr.py`, dùng PaddleOCR) đã viết code nhưng CHƯA CHẠY ĐƯỢC** — lỗi môi trường

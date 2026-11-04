@@ -18,7 +18,7 @@ import os
 import time
 from pathlib import Path
 
-os.environ.setdefault("HF_HOME", r"G:\ThuvienAI\huggingface")
+os.environ.setdefault("HF_HOME", r"D:\Claude\Library\huggingface")
 
 import torch
 from PIL import Image
